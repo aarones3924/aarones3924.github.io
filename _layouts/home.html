@@ -1,0 +1,68 @@
+---
+layout: default
+---
+
+<div class="home">
+  <section class="hero">
+    <h1>🤖 AI Tools Hub</h1>
+    <p class="tagline">Honest reviews, real comparisons, practical guides</p>
+    <p class="subtitle">We test AI tools so you don't have to. Find the perfect tool for your needs.</p>
+  </section>
+
+  <section class="featured-categories">
+    <div class="category-grid">
+      <a href="#reviews" class="category-card">
+        <span class="icon">⭐</span>
+        <h3>Reviews</h3>
+        <p>In-depth tool reviews</p>
+      </a>
+      <a href="#comparisons" class="category-card">
+        <span class="icon">⚖️</span>
+        <h3>Comparisons</h3>
+        <p>Head-to-head battles</p>
+      </a>
+      <a href="#guides" class="category-card">
+        <span class="icon">📚</span>
+        <h3>Guides</h3>
+        <p>How-to tutorials</p>
+      </a>
+      <a href="#make-money" class="category-card">
+        <span class="icon">💰</span>
+        <h3>Make Money</h3>
+        <p>Monetize AI skills</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="latest-posts">
+    <h2>📝 Latest Articles</h2>
+    <div class="post-grid">
+      {% for post in site.posts limit:12 %}
+      <article class="post-card">
+        <a href="{{ post.url | relative_url }}">
+          <div class="post-meta">
+            <span class="date">{{ post.date | date: "%b %d, %Y" }}</span>
+            {% if post.categories.first %}
+            <span class="category">{{ post.categories.first }}</span>
+            {% endif %}
+          </div>
+          <h3>{{ post.title }}</h3>
+          <p class="excerpt">{{ post.description | truncate: 120 }}</p>
+        </a>
+      </article>
+      {% endfor %}
+    </div>
+    
+    {% if site.posts.size > 12 %}
+    <div class="view-all">
+      <a href="{{ '/archive' | relative_url }}" class="btn">View All Articles →</a>
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="newsletter">
+    <h2>📬 Stay Updated</h2>
+    <p>Get the latest AI tool reviews and guides delivered to your inbox.</p>
+    <p class="coming-soon">Newsletter coming soon!</p>
+  </section>
+</div>

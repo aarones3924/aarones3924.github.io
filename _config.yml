@@ -1,8 +1,8 @@
 title: AI Tools Hub
-description: Honest reviews and comparisons of AI tools
+description: Honest reviews, comparisons, and guides for AI tools. ChatGPT, Claude, Midjourney, and more.
 baseurl: ""
-url: ""
-theme: minima
+url: "https://aarones3924.github.io"
+theme: null
 
 # SEO
 author:
@@ -29,3 +29,10 @@ google_analytics:
 social:
   twitter: 
   github:
+
+# 排除文件
+exclude:
+  - hugo.toml
+  - README.md
+  - Gemfile
+  - Gemfile.lock
