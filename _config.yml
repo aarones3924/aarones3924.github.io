@@ -1,0 +1,31 @@
+title: AI Tools Hub
+description: Honest reviews and comparisons of AI tools
+baseurl: ""
+url: ""
+theme: minima
+
+# SEO
+author:
+  name: AI Tools Hub
+  
+plugins:
+  - jekyll-feed
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# 文章设置
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      author: "AI Tools Hub"
+
+# Google Analytics (填入你的 ID)
+google_analytics: 
+
+# 社交链接
+social:
+  twitter: 
+  github:

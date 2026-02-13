@@ -1,0 +1,99 @@
+baseURL = "https://example.com/"
+languageCode = "en-us"
+title = "AI Tools Hub - Reviews, Comparisons & Guides"
+theme = "PaperMod"
+
+enableRobotsTXT = true
+buildDrafts = false
+buildFuture = false
+buildExpired = false
+
+[minify]
+disableXML = true
+minifyOutput = true
+
+[params]
+env = "production"
+title = "AI Tools Hub"
+description = "Honest reviews and comparisons of AI tools. Find the best AI writing, image, video, and coding tools for your needs."
+keywords = ["AI tools", "AI reviews", "ChatGPT", "Claude", "Midjourney", "AI writing", "AI image generator"]
+author = "AI Tools Hub"
+images = ["logo.png"]
+DateFormat = "January 2, 2006"
+defaultTheme = "auto"
+disableThemeToggle = false
+ShowReadingTime = true
+ShowShareButtons = true
+ShowPostNavLinks = true
+ShowBreadCrumbs = true
+ShowCodeCopyButtons = true
+ShowWordCount = true
+ShowRssButtonInSectionTermList = true
+UseHugoToc = true
+disableSpecialCharacterHandling = false
+disableScrollToTop = false
+comments = false
+hidemeta = false
+hideSummary = false
+showtoc = true
+tocopen = false
+
+[params.assets]
+favicon = "/favicon.ico"
+favicon16x16 = "/favicon-16x16.png"
+favicon32x32 = "/favicon-32x32.png"
+apple_touch_icon = "/apple-touch-icon.png"
+
+[params.homeInfoParams]
+Title = "AI Tools Hub 🤖"
+Content = "Your trusted source for AI tool reviews, comparisons, and guides. We test so you don't have to."
+
+[[params.socialIcons]]
+name = "twitter"
+url = "https://twitter.com/"
+
+[[params.socialIcons]]
+name = "github"
+url = "https://github.com/"
+
+[params.analytics]
+google = ""
+
+[params.cover]
+hidden = false
+hiddenInList = false
+hiddenInSingle = false
+
+[params.fuseOpts]
+isCaseSensitive = false
+shouldSort = true
+location = 0
+distance = 1000
+threshold = 0.4
+minMatchCharLength = 0
+keys = ["title", "permalink", "summary", "content"]
+
+[[menu.main]]
+identifier = "categories"
+name = "Categories"
+url = "/categories/"
+weight = 10
+
+[[menu.main]]
+identifier = "tags"
+name = "Tags"
+url = "/tags/"
+weight = 20
+
+[[menu.main]]
+identifier = "search"
+name = "Search"
+url = "/search/"
+weight = 30
+
+[outputs]
+home = ["HTML", "RSS", "JSON"]
+
+[taxonomies]
+category = "categories"
+tag = "tags"
