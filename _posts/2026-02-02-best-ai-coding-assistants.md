@@ -97,7 +97,7 @@ Codeium offers impressive AI coding features completely free. It's the best choi
 
 **Pricing:** Free for individuals
 
-**:** Students, hobbyists, budget-conscious developers
+**Best for:** Students, hobbyists, budget-conscious developers
 
 ## 4. Amazon CodeWhisperer - Best for AWS
 
@@ -235,8 +235,10 @@ Don't accept everything. Review suggestions for:
 
 ### 3. Use Chat for Complex Tasks
 Autocomplete is great for simple code. Use chat for:
-- Debugging
-- Architecture decisions\ new concepts
+- Debugging errors
+- Architecture decisions
+- Learning new concepts
+- Refactoring suggestions
 
 ### 4. Provide Context
 The more context AI has, the better suggestions you get:
