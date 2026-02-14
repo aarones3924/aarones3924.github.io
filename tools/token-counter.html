@@ -1,0 +1,223 @@
+---
+layout: default
+title: AI Token Counter & Cost Calculator
+description: Calculate tokens and estimate costs for GPT-4, Claude, and other AI models. Free online tool.
+---
+
+<style>
+.tool-container {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+.tool-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+.tool-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+.tool-header p {
+  color: #666;
+}
+.input-section {
+  margin-bottom: 1.5rem;
+}
+.input-section label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.input-section textarea {
+  width: 100%;
+  min-height: 200px;
+  padding: 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  resize: vertical;
+}
+.input-section textarea:focus {
+  outline: none;
+  border-color: #6366f1;
+}
+.model-select {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.model-btn {
+  padding: 0.5rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.model-btn:hover {
+  border-color: #6366f1;
+}
+.model-btn.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+}
+.results {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+.result-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+.result-card .value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6366f1;
+}
+.result-card .label {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 0.25rem;
+}
+.pricing-table {
+  margin-top: 2rem;
+  overflow-x: auto;
+}
+.pricing-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.pricing-table th, .pricing-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+.pricing-table th {
+  background: #f5f7fa;
+  nt-weight: 600;
+}
+.pricing-table tr:hover {
+  background: #f9fafb;
+}
+</style>
+
+<div class="tool-container">
+  <div class="tool-header">
+    <h1>🔢 AI Token Counter</h1>
+    <p>Calculate tokens and estimate API costs for GPT-4, Claude, and more</p>
+  </div>
+
+  <div class="input-section">
+    <label for="text-input">Enter your text:</label>
+    <textarea id="text-input" placeholder="Paste your prompt or text here..."></textarea>
+  </div>
+
+  <div class="model-select">
+    <button class="model-btn active" data-model="gpt4">GPT-4</button>
+    <button class="model-btn" data-model="gpt4o">GPT-4o</button>
+    on class="model-btn" data-model="gpt35">GPT-3.5</button>
+    <button class="model-btn" data-model="claude3">Claude 3</button>
+    <button class="model-btn" data-model="claude35">Claude 3.5</button>
+  </div>
+
+  <div class="results">
+    <div class="result-card">
+      <div class="value" id="char-count">0</div>
+      <div class="label">Characters</div>
+    </div>
+    <div class="result-card">
+      <div class="value" id="word-count">0</div>
+      <div class="label">Words</div>
+    </div>
+    <div class="result-card">
+      <div class="value" id="token-count">0</div>
+      <div class="label">Tokens (est.)</div>
+    </div>
+    <div class="result-card">
+      <div class="value" id="cost-input">$0.000</div>
+      <div class="label">Input Cost</div>
+    </div>
+    <div class="result-card">
+      <div class="value" id="cost-output">$0.000</div>
+      <div class="label">Output Cost (1K)</div>
+    </div>
+  </div>
+
+  <div class="pricing-table">
+    <h3>💰 Current API Pricing (per 1M tokens)</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Model</th>
+          <th>Input</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>GPT-4 Turbo</td><td>$10.00</td><td>$30.00</td></tr>
+        <tr><td>GPT-4o</td><td>$5.00</td><td>$15.00</td></tr>
+        <tr><td>GPT-3.5 Turbo</td><td>$0.50</td><td>$1.50</td></tr>
+        <tr><td>Claude 3 Opus</td><td>$15.00</td><td>$75.00</td></tr>
+        <tr><td>Claude 3.5 Sonnet</td><td>$3.00</td><td>$15.00</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const pricing = {
+  gpt4: { input: 10, output: 30 },
+  gpt4o: { input: 5, output: 15 },
+  gpt35: { input: 0.5, output: 1.5 },
+  claude3: { input: 15, output: 75 },
+  claude35: { input: 3, output: 15 }
+};
+
+let currentModel = 'gpt4';
+
+function estimateTokens(text) {
+  // Rough estimation: ~4 chars per token for English, ~2 for Chinese
+  const chineseChars = (text.match(/[\u4e00-\u9fff]/g) || []).length;
+  const otherChars = text.length - chineseChars;
+  return Math.ceil(chineseChars / 1.5 + otherChars / 4);
+}
+
+function updateResults() {
+  const text = document.getElementById('text-input').value;
+  const chars = text.length;
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const tokens = estimateTokens(text);
+  
+  const price = pricing[currentModel];
+  const inputCost = (tokens / 1000000) * price.input;
+  const outputCost = (1000 / 1000000) * price.output;
+
+  document.getElementById('char-count').textContent = chars.toLocaleString();
+  document.getElementById('word-count').textContent = words.toLocaleString();
+  document.getElementById('token-count').textContent = tokens.toLocaleString();
+  document.getElementById('cost-input').textContent = '$' + inputCost.toFixed(4);
+  document.getElementById('cost-output').textContent = '$' + outputCost.toFixed(4);
+}
+
+document.getElementById('text-input').addEventListener('input', updateResults);
+
+dySelectorAll('.model-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentModel = btn.dataset.model;
+    updateResults();
+  });
+});
+</script>

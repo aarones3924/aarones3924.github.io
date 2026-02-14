@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,10 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Prism.js for Syntax Highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
   
   <!-- Styles -->
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
@@ -35,6 +38,9 @@
   {% endif %}
 </head>
 <body>
+  <!-- Reading Progress Bar -->
+  <div class="reading-progress" id="reading-progress"></div>
+
   <header class="site-header">
     <div class="container">
       <a href="{{ '/' | relative_url }}" class="logo">🤖 AI Tools Hub</a>
@@ -42,9 +48,41 @@
         <a href="{{ '/' | relative_url }}">Home</a>
         <a href="{{ '/archive' | relative_url }}">Articles</a>
         <a href="{{ '/about' | relative_url }}">About</a>
+        
+        <!-- Search -->
+        <div class="search-container">
+          <button class="search-toggle" id="search-toggle" aria-label="Search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+            <span>Search</span>
+          </button>
+        </div>
+        
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+          <span class="theme-icon">🌙</span>
+        </button>
       </nav>
     </div>
   </header>
+
+  <!-- Search Modal -->
+  <div class="search-modal" id="search-modal">
+    <div class="search-box">
+      <div class="search-input-wrapper">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input type="text" class="search-input" id="search-input" placeholder="Search articles..." autocomplete="off">
+      </div>
+      <div class="search-results" id="search-results">
+        <div class="search-no-results">Type to search...</div>
+      </div>
+    </div>
+  </div>
 
   <main class="site-content">
     <div class="container">
@@ -57,6 +95,151 @@
       <p>© {{ 'now' | date: "%Y" }} AI Tools Hub. All rights reserved.</p>
       <p class="disclaimer">We may earn affiliate commissions from links on this site.</p>
     </div>
-  </footer>
+  </foote- Back to Top Button -->
+  <button class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
+
+  <!-- Prism.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+  <!-- Site Scripts -->
+  <script>
+    // Posts data for search
+    const posts = [
+      {% for post in site.posts %}
+      {
+        title: {{ post.title | jsonify }},
+        url: {{ post.url | relative_url | jsonify }},
+        excerpt: {{ post.excerpt | strip_html | truncate: 150 | jsonify }},
+        date: {{ post.date | date: "%Y-%m-%d" | jsonify }},
+        category: {{ post.categories.first | jsonify }}
+      }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
+    ];
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    const themeIcon = themeToggle.querySelector('.theme-icon');
+    const html = document.documentElement;
+    
+    // Check saved theme or system preference
+    const savedTheme = localStorage.getItem('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
+      html.setAttribute('data-theme', 'dark');
+      themeIcon.textContent = '☀️';
+    }
+    
+    themeToggle.addEventListener('click', () => {
+      const isDark = html.getAttribute('data-theme') === 'dark';
+      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+      themeIcon.textContent = isDark ? '🌙' : '☀️';
+      localStorage.setItem, isDark ? 'light' : 'dark');
+    });
+
+    // Search Functionality
+    const searchToggle = document.getElementById('search-toggle');
+    const searchModal = document.getElementById('search-modal');
+    const searchInput = document.getElementById('search-input');
+    const searchResults = document.getElementById('search-results');
+
+    searchToggle.addEventListener('click', () => {
+      searchModal.classList.add('active');
+      searchInput.focus();
+    });
+
+    searchModal.addEventListener('click', (e) => {
+      if (e.target === searchModal) {
+     searchModal.classList.remove('active');
+        searchInput.value = '';
+        searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchModal.classList.remove('active');
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchModal.classList.add('active');
+        searchInput.focus();
+      }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      
+      if (!query) {
+        searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
+        return;
+      }
+
+      const results = posts.filter(post => 
+        post.title.toLowerCase().includes(query) || 
+        post.excerpt.toLowerCase().includes(query)
+      );
+
+      if (results.length === 0) {
+        searchResults.innerHTML = '<div class="search-no-results">No results found</div>';
+        return;
+      }
+
+      searchResults.innerHTML = results.slice(0, 8).map(post => `
+        <a href="${post.url}" class="search-result-item">
+          <h4title}</h4>
+          <p>${post.excerpt}</p>
+        </a>
+      `).join('');
+    });
+
+    // Reading Progress Bar
+    const progressBar = document.getElementById('reading-progress');
+    
+    window.addEventListener('scroll', () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = (scrollTop / docHeight) * 100;
+      progressBar.style.width = progress + '%';
+    });
+
+    // Back to Top Button
+    const backToTop = document.getElementById('back-to-top');
+    
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 5
+        backToTop.classList.add('visible');
+      } else {
+        backToTop.classList.remove('visible');
+      }
+    });
+
+    backToTop.addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Lazy Load Images
+    document.addEventListener('DOMContentLoaded', () => {
+      const images = document.querySelectorAll('.post-content img');
+      
+      const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.classList.add('loaded');
+            observer.unobserve(img);
+          }
+        });
+      }, { rootMargin: '50px' });
+
+      images.forEach(img => {
+        imageObserver.observe(img);
+      });
+    });
+  </script>
 </body>
 </html>
