@@ -186,6 +186,7 @@ class APIBalanceDashboard:
         for field in fields:
             row = tk.Frame(card, bg="#ffffff")
             row.pack(fill=tk.X, pady=2)
+            row.columnconfigure(1, weight=1)
 
             tk.Label(
                 row,
@@ -193,7 +194,7 @@ class APIBalanceDashboard:
                 font=("Microsoft YaHei UI", 9),
                 fg="#4b5563",
                 bg="#ffffff",
-            ).pack(side=tk.LEFT)
+            ).grid(row=0, column=0, sticky="w")
 
             var = tk.StringVar(value="-")
             tk.Label(
@@ -202,7 +203,10 @@ class APIBalanceDashboard:
                 font=("Consolas", 10, "bold"),
                 fg="#111827",
                 bg="#ffffff",
-            ).pack(side=tk.RIGHT)
+                anchor="e",
+                justify="right",
+                wraplength=240,
+            ).grid(row=0, column=1, sticky="e")
             values[field] = var
 
         update_var = tk.StringVar(value="更新时间：-")
@@ -418,25 +422,25 @@ class APIBalanceDashboard:
             ]
 
             for idx, headers in enumerate(header_candidates, 1):
-                resp, body = self._request_json(
-                    "GET",
-                    "https://yunyi.cfd/user/api/v1/me",
-                    headers=headers,
-                    timeout=20,
-                )
-                attempts.append(f"me 尝试#{idx}: HTTP {resp.status_code}, headers={list(headers.keys())}")
+                try:
+                    resp, body = self._request_json(
+                        "GET",
+                        "https://yunyi.cfd/user/api/v1/me",
+                        headers=headers,
+                        timeout=20,
+                    )
+                    attempts.append(f"me 尝试#{idx}: HTTP {resp.status_code}, headers={list(headers.keys())}")
 
-                if resp.status_code < 400 and isinstance(body, dict) and not self._looks_like_error(body):
-                    me_data = body
-                    break
+                    if resp.status_code < 400 and isinstance(body, dict) and not self._looks_like_error(body):
+                        me_data = body
+                        break
 
-                # 有些实现会把 data 放在 code!=0 下，这里只要确实有 data 就接收
-                if isinstance(body, dict) and isinstance(body.get("data"), (dict, list)):
-                    me_data = body
-                    break
-
-            if me_data is None:
-                raise RuntimeError("云驿 /me 接口认证失败，请检查 API Key")
+                    # 有些实现会把 data 放在 code!=0 下，这里只要确实有 data 就接收
+                    if isinstance(body, dict) and isinstance(body.get("data"), (dict, list)):
+                        me_data = body
+                        break
+                except Exception as e:
+                    attempts.append(f"me 尝试#{idx}: 异常 {e}")
 
             # batch-info：前端实际是 POST /user/api/v1/batch-info {keys:[...]}。
             batch_data = None
@@ -455,18 +459,24 @@ class APIBalanceDashboard:
                         json_payload=payload,
                         timeout=20,
                     )
-                    if resp.status_code < 500 and isinstance(body, (dict, list)):
+                    if resp.status_code < 500 and isinstance(body, (dict, list)) and not self._looks_like_error(body):
+                        batch_data = body
+                        break
+                    if isinstance(body, dict) and isinstance(body.get("data"), (dict, list)):
                         batch_data = body
                         break
                     batch_errors.append(f"HTTP {resp.status_code}")
                 except Exception as e:
                     batch_errors.append(str(e))
 
+            if me_data is None and batch_data is None:
+                raise RuntimeError("云驿接口认证失败，请检查 API Key")
+
             me_obj = self._unwrap_data(me_data)
             batch_obj = self._unwrap_data(batch_data)
             search_objs = [me_data, me_obj, batch_data, batch_obj]
 
-            key_name = self._format_kv(self._pick_kv(search_objs, ["name", "key_name", "title", "group_name"]))
+            key_name = self._format_kv(self._pick_kv(search_objs, ["name", "key_name", "title", "group_name"], scalar_only=True))
             remain = self._format_kv(
                 self._pick_kv(
                     search_objs,
@@ -480,6 +490,7 @@ class APIBalanceDashboard:
                         "credit",
                         "quota",
                     ],
+                    scalar_only=True,
                 )
             )
 
@@ -493,9 +504,11 @@ class APIBalanceDashboard:
                     "today_tokens",
                     "used_quota",
                     "total_cost_usd",
+                    "spent_today",
                 ],
+                scalar_only=True,
             )
-            limit_kv = self._pick_kv(search_objs, ["daily_limit", "daily_quota", "quota", "total_quota"])
+            limit_kv = self._pick_kv(search_objs, ["daily_limit", "daily_quota", "quota", "total_quota"], scalar_only=True)
             usage = self._format_usage(usage_kv, limit_kv)
 
             expire = self._fmt_expire(
@@ -507,6 +520,8 @@ class APIBalanceDashboard:
                         "expired_at",
                         "subscription_expires_at",
                         "quota_pack_expires_at",
+                        "valid_until",
+                        "valid_to",
                     ],
                 )
             )
@@ -540,7 +555,13 @@ class APIBalanceDashboard:
                 json.dumps(batch_data, ensure_ascii=False, indent=2),
             ]
 
-            status = "成功" if batch_data is not None else "部分成功"
+            if me_data is not None and batch_data is not None:
+                status = "成功"
+            elif batch_data is not None:
+                status = "成功"
+            else:
+                status = "部分成功"
+
             self._update_card("yunyi", status, summary, "\n".join(detail_lines))
 
         except Exception as e:
@@ -577,7 +598,8 @@ class APIBalanceDashboard:
             if not isinstance(login_data, dict):
                 raise RuntimeError("登录响应异常（非 JSON 对象）")
 
-            token = self._pick_value([login_data], ["access_token", "token", "jwt", "id_token"])
+            login_obj = self._unwrap_data(login_data)
+            token = self._pick_value([login_obj, login_data], ["access_token", "token", "jwt", "id_token"])
             if not token:
                 msg = login_data.get("message") or login_data.get("error") or "登录失败，未获取到 token"
                 raise RuntimeError(msg)
@@ -607,26 +629,43 @@ class APIBalanceDashboard:
             progress = self._unwrap_data(results.get("progress", {}).get("data"))
             summary_raw = self._unwrap_data(results.get("summary", {}).get("data"))
 
-            sub_list = self._normalize_subscriptions(active)
-            if not sub_list:
-                sub_list = self._normalize_subscriptions(subs)
-
+            sub_list = self._collect_subscriptions([active, subs, progress, summary_raw])
             primary = self._select_primary_subscription(sub_list)
 
-            search_objs = [primary, progress, summary_raw, me, results]
+            search_objs = [primary, progress, summary_raw, me, active, subs, results]
 
-            account = self._format_kv(self._pick_kv([me], ["name", "email", "username", "account"]))
+            account = self._format_kv(self._pick_kv([me], ["name", "email", "username", "account"], scalar_only=True))
+
             plan = self._format_kv(
                 self._pick_kv(
-                    [primary, summary_raw, progress],
-                    ["group_name", "name", "subscription_name", "plan_name", "group", "title"],
+                    [primary, summary_raw, progress, active],
+                    ["group_name", "subscription_name", "plan_name", "name", "title", "plan", "package_name"],
+                    scalar_only=True,
                 )
             )
 
             usage = self._format_usage(
-                self._pick_kv(search_objs, ["current_period_count", "daily_spent", "used_quota", "today_usage"]),
-                self._pick_kv(search_objs, ["daily_limit", "daily_quota", "total_quota", "quota"]),
+                self._pick_kv(
+                    search_objs,
+                    [
+                        "current_period_count",
+                        "daily_spent",
+                        "used_quota",
+                        "today_usage",
+                        "today_used",
+                        "used_today",
+                        "spent_today",
+                        "used_usd",
+                    ],
+                    scalar_only=True,
+                ),
+                self._pick_kv(
+                    search_objs,
+                    ["daily_limit", "daily_quota", "total_quota", "quota", "limit_usd", "daily_limit_usd"],
+                    scalar_only=True,
+                ),
             )
+
             expire = self._fmt_expire(
                 self._pick_value(
                     search_objs,
@@ -636,6 +675,8 @@ class APIBalanceDashboard:
                         "expired_at",
                         "end_at",
                         "quota_pack_expires_at",
+                        "valid_until",
+                        "renew_at",
                     ],
                 )
             )
@@ -651,7 +692,10 @@ class APIBalanceDashboard:
                         "balance",
                         "available_balance",
                         "credit",
+                        "balance_usd",
+                        "available_credit",
                     ],
+                    scalar_only=True,
                 )
             )
 
@@ -793,15 +837,15 @@ class APIBalanceDashboard:
         kv = self._pick_kv(objs, keys)
         return kv[1] if kv else None
 
-    def _pick_kv(self, objs: list[Any], keys: list[str]) -> tuple[str, Any] | None:
+    def _pick_kv(self, objs: list[Any], keys: list[str], *, scalar_only: bool = False) -> tuple[str, Any] | None:
         keyset = set(keys)
         for obj in objs:
-            result = self._deep_find_kv(obj, keyset)
+            result = self._deep_find_kv(obj, keyset, scalar_only=scalar_only)
             if result is not None:
                 return result
         return None
 
-    def _deep_find_kv(self, obj: Any, keyset: set[str]) -> tuple[str, Any] | None:
+    def _deep_find_kv(self, obj: Any, keyset: set[str], *, scalar_only: bool = False) -> tuple[str, Any] | None:
         stack = [obj]
         visited: set[int] = set()
 
@@ -815,7 +859,10 @@ class APIBalanceDashboard:
             if isinstance(cur, dict):
                 for k, v in cur.items():
                     if k in keyset and v not in (None, "", []):
-                        return k, v
+                        if scalar_only and isinstance(v, (dict, list)):
+                            pass
+                        else:
+                            return k, v
                 for v in cur.values():
                     if isinstance(v, (dict, list)):
                         stack.append(v)
@@ -832,13 +879,31 @@ class APIBalanceDashboard:
             return [x for x in data if isinstance(x, dict)]
 
         if isinstance(data, dict):
-            for k in ["items", "subscriptions", "rows", "list", "data"]:
+            for k in ["items", "subscriptions", "rows", "list", "data", "records"]:
                 if isinstance(data.get(k), list):
                     return [x for x in data[k] if isinstance(x, dict)]
-            if any(k in data for k in ["name", "group_name", "expires_at", "id"]):
+            for k in ["subscription", "active_subscription", "current_subscription", "plan", "current_plan"]:
+                if isinstance(data.get(k), dict):
+                    return [data[k]]
+            if any(k in data for k in ["name", "group_name", "expires_at", "id", "subscription_name", "plan_name"]):
                 return [data]
 
         return []
+
+    def _collect_subscriptions(self, objs: list[Any]) -> list[dict[str, Any]]:
+        all_subs: list[dict[str, Any]] = []
+        for obj in objs:
+            all_subs.extend(self._normalize_subscriptions(obj))
+
+        seen: set[str] = set()
+        uniq: list[dict[str, Any]] = []
+        for item in all_subs:
+            key = json.dumps(item, ensure_ascii=False, sort_keys=True)
+            if key in seen:
+                continue
+            seen.add(key)
+            uniq.append(item)
+        return uniq
 
     def _select_primary_subscription(self, subs: list[dict[str, Any]]) -> dict[str, Any]:
         if not subs:
@@ -900,9 +965,9 @@ class APIBalanceDashboard:
                 return self._fmt_maybe_int(n)
 
         if isinstance(value, (dict, list)):
-            return json.dumps(value, ensure_ascii=False)
+            return self._short_text(json.dumps(value, ensure_ascii=False), 72)
 
-        return str(value)
+        return self._short_text(str(value), 72)
 
     @staticmethod
     def _to_float(v: Any) -> float | None:
@@ -916,6 +981,12 @@ class APIBalanceDashboard:
             return float(v)
         except Exception:
             return None
+
+    @staticmethod
+    def _short_text(text: str, max_len: int = 72) -> str:
+        if len(text) <= max_len:
+            return text
+        return text[: max_len - 3] + "..."
 
     @staticmethod
     def _fmt_maybe_int(v: Any) -> str:
