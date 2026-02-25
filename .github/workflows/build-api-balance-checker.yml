@@ -1,0 +1,35 @@
+name: Build API Balance Checker (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        working-directory: tool/api-balance-checker
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build EXE
+        working-directory: tool/api-balance-checker
+        run: |
+          pyinstaller --noconfirm --clean --onefile --windowed --name "api-balance-checker" main.py
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-balance-checker-windows
+          path: tool/api-balance-checker/dist/api-balance-checker.exe
+          if-no-files-found: error
