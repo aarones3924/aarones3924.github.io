@@ -476,7 +476,16 @@ class APIBalanceDashboard:
             batch_obj = self._unwrap_data(batch_data)
             search_objs = [me_data, me_obj, batch_data, batch_obj]
 
-            key_name = self._format_kv(self._pick_kv(search_objs, ["name", "key_name", "title", "group_name"], scalar_only=True))
+            key_name = self._format_kv(
+                self._pick_kv(
+                    search_objs,
+                    ["name", "key_name", "title", "group_name", "api_key_name", "display_name"],
+                    scalar_only=True,
+                )
+            )
+            if key_name in ("-", ""):
+                raw_key = self._pick_value(search_objs, ["key", "api_key", "token", "access_key"]) or api_key
+                key_name = self._mask_secret(raw_key)
             remain = self._format_kv(
                 self._pick_kv(
                     search_objs,
@@ -489,6 +498,7 @@ class APIBalanceDashboard:
                         "balance",
                         "credit",
                         "quota",
+                        "quota_pack_remaining",
                     ],
                     scalar_only=True,
                 )
@@ -525,6 +535,12 @@ class APIBalanceDashboard:
                     ],
                 )
             )
+
+            if remain in ("-", ""):
+                remain = self._calc_remaining(
+                    self._pick_kv(search_objs, ["quota_pack", "total_quota", "daily_quota"], scalar_only=True),
+                    self._pick_kv(search_objs, ["quota_pack_used", "used_quota", "daily_spent"], scalar_only=True),
+                )
 
             summary = {
                 "剩余额度": remain,
@@ -940,6 +956,27 @@ class APIBalanceDashboard:
             return f"{self._fmt_maybe_int(u)} / {self._fmt_maybe_int(l)}"
 
         return f"{usage_text} / {self._format_kv(limit_kv)}"
+
+    def _calc_remaining(self, total_kv: tuple[str, Any] | None, used_kv: tuple[str, Any] | None) -> str:
+        if total_kv is None or used_kv is None:
+            return "-"
+
+        total = self._to_float(total_kv[1])
+        used = self._to_float(used_kv[1])
+        if total is None or used is None:
+            return "-"
+
+        remain = max(0.0, total - used)
+        return self._fmt_maybe_int(remain)
+
+    @staticmethod
+    def _mask_secret(v: Any) -> str:
+        if v in (None, ""):
+            return "-"
+        s = str(v).strip()
+        if len(s) <= 8:
+            return s
+        return f"{s[:4]}...{s[-4:]}"
 
     def _format_kv(self, kv: tuple[str, Any] | None) -> str:
         if kv is None:
