@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import threading
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -15,7 +17,21 @@ from tkinter import ttk, messagebox, scrolledtext
 
 
 APP_TITLE = "API 余额监控中心"
-CONFIG_PATH = Path(__file__).with_name("config.json")
+
+
+def _resolve_config_path() -> Path:
+    # PyInstaller 单文件模式下 __file__ 在临时目录，不能用于持久化配置。
+    if getattr(sys, "frozen", False):
+        base = Path(os.getenv("APPDATA") or (Path.home() / "AppData" / "Roaming"))
+        cfg_dir = base / "APIBalanceChecker"
+    else:
+        cfg_dir = Path(__file__).resolve().parent
+
+    cfg_dir.mkdir(parents=True, exist_ok=True)
+    return cfg_dir / "config.json"
+
+
+CONFIG_PATH = _resolve_config_path()
 
 DEFAULT_CONFIG = {
     "changfeng": {"api_key": ""},
@@ -38,8 +54,8 @@ class APIBalanceDashboard:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title(APP_TITLE)
-        self.root.geometry("1160x780")
-        self.root.minsize(1020, 720)
+        self.root.geometry("1160x420")
+        self.root.minsize(980, 360)
         self.root.configure(bg="#f3f6fb")
 
         self.config_data = self._load_config()
@@ -134,28 +150,21 @@ class APIBalanceDashboard:
             ),
         }
 
-        # 详情区
-        notebook = ttk.Notebook(container)
-        notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=(6, 12))
+        # 底部状态条（按需保留，不再显示详情栏）
+        bottom = tk.Frame(container, bg="#f3f6fb", padx=14, pady=10)
+        bottom.pack(fill=tk.BOTH, expand=True)
+
+        self.status_var = tk.StringVar(value="就绪")
+        tk.Label(
+            bottom,
+            textvariable=self.status_var,
+            font=("Microsoft YaHei UI", 10),
+            fg="#4b5563",
+            bg="#f3f6fb",
+            anchor="w",
+        ).pack(fill=tk.X, side=tk.BOTTOM)
 
         self.detail_boxes: dict[str, scrolledtext.ScrolledText] = {}
-        for key, tab_title in [
-            ("changfeng", "长风详情"),
-            ("yunyi", "云驿详情"),
-            ("codex", "Codex详情"),
-        ]:
-            tab = ttk.Frame(notebook, padding=10)
-            notebook.add(tab, text=tab_title)
-            box = scrolledtext.ScrolledText(tab, font=("Consolas", 10), bg="#ffffff", fg="#111827")
-            box.pack(fill=tk.BOTH, expand=True)
-            box.insert("1.0", "等待查询...\n")
-            box.config(state=tk.DISABLED)
-            self.detail_boxes[key] = box
-
-        bottom = ttk.Frame(container, style="Main.TFrame", padding=(12, 0, 12, 10))
-        bottom.pack(fill=tk.X)
-        self.status_var = tk.StringVar(value="就绪")
-        ttk.Label(bottom, textvariable=self.status_var).pack(anchor=tk.W)
 
     def _build_card(self, parent: ttk.Frame, column: int, title: str, fields: list[str]):
         card = tk.LabelFrame(
@@ -228,6 +237,21 @@ class APIBalanceDashboard:
 
     def _load_config(self) -> dict[str, Any]:
         if not CONFIG_PATH.exists():
+            # 兼容旧版本：尝试从旧路径迁移配置
+            for old_path in self._legacy_config_candidates():
+                if old_path.exists():
+                    try:
+                        old_data = json.loads(old_path.read_text(encoding="utf-8"))
+                        if isinstance(old_data, dict):
+                            merged_old = self._merge_with_default(old_data)
+                            CONFIG_PATH.write_text(
+                                json.dumps(merged_old, ensure_ascii=False, indent=2),
+                                encoding="utf-8",
+                            )
+                            return merged_old
+                    except Exception:
+                        pass
+
             CONFIG_PATH.write_text(json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2), encoding="utf-8")
             return json.loads(json.dumps(DEFAULT_CONFIG))
 
@@ -236,6 +260,13 @@ class APIBalanceDashboard:
         except Exception:
             data = json.loads(json.dumps(DEFAULT_CONFIG))
 
+        return self._merge_with_default(data)
+
+    def _save_config(self):
+        CONFIG_PATH.write_text(json.dumps(self.config_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    @staticmethod
+    def _merge_with_default(data: dict[str, Any]) -> dict[str, Any]:
         merged = json.loads(json.dumps(DEFAULT_CONFIG))
         if isinstance(data, dict):
             for k, v in data.items():
@@ -245,8 +276,21 @@ class APIBalanceDashboard:
                     merged[k] = v
         return merged
 
-    def _save_config(self):
-        CONFIG_PATH.write_text(json.dumps(self.config_data, ensure_ascii=False, indent=2), encoding="utf-8")
+    @staticmethod
+    def _legacy_config_candidates() -> list[Path]:
+        cands: list[Path] = []
+        cands.append(Path(__file__).resolve().with_name("config.json"))
+        if getattr(sys, "frozen", False):
+            cands.append(Path(sys.executable).resolve().with_name("config.json"))
+        # 去重
+        uniq: list[Path] = []
+        seen: set[str] = set()
+        for p in cands:
+            k = str(p)
+            if k not in seen:
+                seen.add(k)
+                uniq.append(p)
+        return uniq
 
     def open_settings(self):
         dlg = tk.Toplevel(self.root)
@@ -474,18 +518,42 @@ class APIBalanceDashboard:
 
             me_obj = self._unwrap_data(me_data)
             batch_obj = self._unwrap_data(batch_data)
-            search_objs = [me_data, me_obj, batch_data, batch_obj]
+            yunyi_item = self._extract_yunyi_item(batch_data, api_key)
+            search_objs = [yunyi_item, me_data, me_obj, batch_data, batch_obj]
 
             key_name = self._format_kv(
                 self._pick_kv(
-                    search_objs,
+                    [yunyi_item, me_obj, batch_obj],
                     ["name", "key_name", "title", "group_name", "api_key_name", "display_name"],
                     scalar_only=True,
                 )
             )
             if key_name in ("-", ""):
-                raw_key = self._pick_value(search_objs, ["key", "api_key", "token", "access_key"]) or api_key
+                raw_key = self._pick_value([yunyi_item, batch_obj, me_obj], ["key", "api_key", "token", "access_key"]) or api_key
                 key_name = self._mask_secret(raw_key)
+
+            usage_kv = self._pick_kv(
+                search_objs,
+                [
+                    "current_period_count",
+                    "today_usage",
+                    "daily_spent",
+                    "used_today",
+                    "today_tokens",
+                    "used_quota",
+                    "total_cost_usd",
+                    "spent_today",
+                    "quota_pack_used",
+                ],
+                scalar_only=True,
+            )
+            limit_kv = self._pick_kv(
+                search_objs,
+                ["daily_limit", "daily_quota", "quota", "total_quota", "quota_pack"],
+                scalar_only=True,
+            )
+            usage = self._format_usage(usage_kv, limit_kv)
+
             remain = self._format_kv(
                 self._pick_kv(
                     search_objs,
@@ -503,23 +571,11 @@ class APIBalanceDashboard:
                     scalar_only=True,
                 )
             )
-
-            usage_kv = self._pick_kv(
-                search_objs,
-                [
-                    "current_period_count",
-                    "today_usage",
-                    "daily_spent",
-                    "used_today",
-                    "today_tokens",
-                    "used_quota",
-                    "total_cost_usd",
-                    "spent_today",
-                ],
-                scalar_only=True,
-            )
-            limit_kv = self._pick_kv(search_objs, ["daily_limit", "daily_quota", "quota", "total_quota"], scalar_only=True)
-            usage = self._format_usage(usage_kv, limit_kv)
+            if remain in ("-", ""):
+                remain = self._calc_remaining(
+                    self._pick_kv(search_objs, ["quota_pack", "total_quota", "daily_quota"], scalar_only=True),
+                    self._pick_kv(search_objs, ["quota_pack_used", "used_quota", "daily_spent"], scalar_only=True),
+                )
 
             expire = self._fmt_expire(
                 self._pick_value(
@@ -535,12 +591,6 @@ class APIBalanceDashboard:
                     ],
                 )
             )
-
-            if remain in ("-", ""):
-                remain = self._calc_remaining(
-                    self._pick_kv(search_objs, ["quota_pack", "total_quota", "daily_quota"], scalar_only=True),
-                    self._pick_kv(search_objs, ["quota_pack_used", "used_quota", "daily_spent"], scalar_only=True),
-                )
 
             summary = {
                 "剩余额度": remain,
@@ -781,14 +831,8 @@ class APIBalanceDashboard:
         self.root.after(0, _run)
 
     def _set_detail(self, provider: str, text: str):
-        def _run():
-            box = self.detail_boxes[provider]
-            box.config(state=tk.NORMAL)
-            box.delete("1.0", tk.END)
-            box.insert("1.0", text)
-            box.config(state=tk.DISABLED)
-
-        self.root.after(0, _run)
+        # 用户要求隐藏详情栏，保留接口但不渲染。
+        return
 
     def _update_card(self, provider: str, status: str, values: dict[str, str], detail: str):
         theme = STATUS_THEME.get(status, STATUS_THEME["未查询"])
@@ -888,6 +932,30 @@ class APIBalanceDashboard:
                         stack.append(v)
 
         return None
+
+    def _extract_yunyi_item(self, batch_data: Any, api_key: str) -> dict[str, Any]:
+        root = self._unwrap_data(batch_data)
+
+        items: list[dict[str, Any]] = []
+        if isinstance(root, list):
+            items.extend([x for x in root if isinstance(x, dict)])
+        elif isinstance(root, dict):
+            for k in ["results", "items", "list", "records", "data"]:
+                arr = root.get(k)
+                if isinstance(arr, list):
+                    items.extend([x for x in arr if isinstance(x, dict)])
+            if any(k in root for k in ["billing_type", "daily_quota", "quota_pack", "quota_pack_used"]):
+                items.insert(0, root)
+
+        if not items:
+            return {}
+
+        for it in items:
+            key_v = str(it.get("key") or it.get("api_key") or "").strip()
+            if key_v and key_v == api_key:
+                return it
+
+        return items[0]
 
     @staticmethod
     def _normalize_subscriptions(data: Any) -> list[dict[str, Any]]:
