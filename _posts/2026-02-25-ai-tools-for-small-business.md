@@ -153,6 +153,11 @@ As teams grow, repeated questions waste a lot of time. Internal AI search reduce
 - Add internal knowledge AI (Guru/Glean)
 - Add role-specific tools (SEO, sales)
 
+## Related Reading
+
+- [Perplexity vs ChatGPT for Research in 2026](/2026/02/25/perplexity-vs-chatgpt-for-research.html)
+- [OpenAI o3 vs Claude Opus vs Gemini Ultra](/2026/02/24/o3-vs-claude-opus-vs-gemini-ultra.html)
+
 ## Final Advice
 
 Start with **2 tools max** for 30 days. Measure real outcomes:
