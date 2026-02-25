@@ -1,338 +1,560 @@
 #!/usr/bin/env python3
-"""API Balance Checker - 查询长风/云驿/Codex的Token用量和余额"""
+"""API 余额监控中心（长风 / 云驿 / Codex）"""
 
+from __future__ import annotations
+
+import json
+import threading
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import requests
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
-import threading
-import json
-import requests
-from datetime import datetime
 
 
-class APIBalanceChecker:
-    def __init__(self, root):
+APP_TITLE = "API 余额监控中心"
+CONFIG_PATH = Path(__file__).with_name("config.json")
+
+DEFAULT_CONFIG = {
+    "changfeng": {"api_key": ""},
+    "yunyi": {"api_key": ""},
+    "codex": {"email": "", "password": ""},
+    "auto_refresh_on_start": True,
+}
+
+
+class APIBalanceDashboard:
+    def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("API 余额查询工具")
-        self.root.geometry("700x600")
-        self.root.resizable(True, True)
+        self.root.title(APP_TITLE)
+        self.root.geometry("1060x760")
+        self.root.minsize(980, 700)
 
+        self.config_data = self._load_config()
+
+        self._init_style()
+        self._build_ui()
+
+        if self.config_data.get("auto_refresh_on_start", True):
+            self.refresh_all()
+
+    # ==================== UI ====================
+
+    def _init_style(self):
         style = ttk.Style()
-        style.configure("Header.TLabel", font=("Microsoft YaHei UI", 12, "bold"))
-        style.configure("Result.TLabel", font=("Microsoft YaHei UI", 10))
-        style.configure("Big.TLabel", font=("Microsoft YaHei UI", 14, "bold"))
+        style.theme_use("clam")
+        style.configure("Main.TFrame", background="#f6f8fb")
+        style.configure("Header.TFrame", background="#1f2937")
+        style.configure("Card.TLabelframe", background="#ffffff", borderwidth=1)
+        style.configure("Card.TLabelframe.Label", font=("Microsoft YaHei UI", 11, "bold"))
+        style.configure("Name.TLabel", font=("Microsoft YaHei UI", 10), background="#ffffff")
+        style.configure("Value.TLabel", font=("Consolas", 10, "bold"), background="#ffffff")
 
-        self.notebook = ttk.Notebook(root)
-        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+    def _build_ui(self):
+        container = ttk.Frame(self.root, style="Main.TFrame")
+        container.pack(fill=tk.BOTH, expand=True)
 
-        self._build_changfeng_tab()
-        self._build_yunyi_tab()
-        self._build_codex_tab()
+        header = ttk.Frame(container, style="Header.TFrame", padding=14)
+        header.pack(fill=tk.X)
 
-        # 状态栏
+        title = tk.Label(
+            header,
+            text=APP_TITLE,
+            font=("Microsoft YaHei UI", 16, "bold"),
+            fg="#ffffff",
+            bg="#1f2937",
+        )
+        title.pack(side=tk.LEFT)
+
+        self.last_update_var = tk.StringVar(value="上次刷新：-")
+        last_update = tk.Label(
+            header,
+            textvariable=self.last_update_var,
+            font=("Microsoft YaHei UI", 9),
+            fg="#d1d5db",
+            bg="#1f2937",
+        )
+        last_update.pack(side=tk.LEFT, padx=(16, 0))
+
+        btn_wrap = ttk.Frame(header, style="Header.TFrame")
+        btn_wrap.pack(side=tk.RIGHT)
+
+        ttk.Button(btn_wrap, text="账号/API 配置", command=self.open_settings).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btn_wrap, text="刷新全部", command=self.refresh_all).pack(side=tk.LEFT)
+
+        cards_wrap = ttk.Frame(container, style="Main.TFrame", padding=(12, 12, 12, 4))
+        cards_wrap.pack(fill=tk.X)
+
+        cards_wrap.columnconfigure(0, weight=1)
+        cards_wrap.columnconfigure(1, weight=1)
+        cards_wrap.columnconfigure(2, weight=1)
+
+        self.cards = {
+            "changfeng": self._build_card(
+                cards_wrap,
+                0,
+                "长风 (Sub2API)",
+                ["状态", "剩余额度", "今日用量", "总请求"],
+            ),
+            "yunyi": self._build_card(
+                cards_wrap,
+                1,
+                "云驿",
+                ["状态", "余额", "今日用量", "总请求"],
+            ),
+            "codex": self._build_card(
+                cards_wrap,
+                2,
+                "Codex (vpsairobot)",
+                ["状态", "账户", "余额", "活跃订阅"],
+            ),
+        }
+
+        notebook = ttk.Notebook(container)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=12, pady=(4, 12))
+
+        self.detail_boxes: dict[str, scrolledtext.ScrolledText] = {}
+        for key, title in [
+            ("changfeng", "长风详情"),
+            ("yunyi", "云驿详情"),
+            ("codex", "Codex详情"),
+        ]:
+            tab = ttk.Frame(notebook, padding=10)
+            notebook.add(tab, text=title)
+            box = scrolledtext.ScrolledText(tab, font=("Consolas", 10))
+            box.pack(fill=tk.BOTH, expand=True)
+            box.insert("1.0", "等待查询...\n")
+            box.config(state=tk.DISABLED)
+            self.detail_boxes[key] = box
+
+        bottom = ttk.Frame(container, padding=(12, 0, 12, 10), style="Main.TFrame")
+        bottom.pack(fill=tk.X)
         self.status_var = tk.StringVar(value="就绪")
-        ttk.Label(root, textvariable=self.status_var, relief=tk.SUNKEN, anchor=tk.W).pack(
-            fill=tk.X, padx=10, pady=(0, 10)
+        ttk.Label(bottom, textvariable=self.status_var).pack(anchor=tk.W)
+
+    def _build_card(self, parent: ttk.Frame, column: int, title: str, fields: list[str]):
+        card = ttk.LabelFrame(parent, text=title, style="Card.TLabelframe", padding=10)
+        card.grid(row=0, column=column, sticky="nsew", padx=6)
+
+        status_label = tk.Label(
+            card,
+            text="未查询",
+            font=("Microsoft YaHei UI", 10, "bold"),
+            fg="#9ca3af",
+            bg="#ffffff",
+        )
+        status_label.pack(anchor=tk.W, pady=(0, 8))
+
+        values: dict[str, tk.StringVar] = {}
+        for f in fields:
+            if f == "状态":
+                continue
+            row = ttk.Frame(card, style="Main.TFrame")
+            row.pack(fill=tk.X, pady=2)
+            name = tk.Label(row, text=f"{f}:", font=("Microsoft YaHei UI", 9), fg="#4b5563", bg="#ffffff")
+            name.pack(side=tk.LEFT)
+
+            value_var = tk.StringVar(value="-")
+            value = tk.Label(row, textvariable=value_var, font=("Consolas", 10, "bold"), fg="#111827", bg="#ffffff")
+            value.pack(side=tk.RIGHT)
+            values[f] = value_var
+
+        update_var = tk.StringVar(value="更新时间：-")
+        update = tk.Label(card, textvariable=update_var, font=("Microsoft YaHei UI", 8), fg="#6b7280", bg="#ffffff")
+        update.pack(anchor=tk.W, pady=(8, 0))
+
+        return {
+            "status_label": status_label,
+            "values": values,
+            "update_var": update_var,
+        }
+
+    # ==================== Config ====================
+
+    def _load_config(self) -> dict[str, Any]:
+        if not CONFIG_PATH.exists():
+            CONFIG_PATH.write_text(
+                json.dumps(DEFAULT_CONFIG, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+            return json.loads(json.dumps(DEFAULT_CONFIG))
+
+        try:
+            data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            data = json.loads(json.dumps(DEFAULT_CONFIG))
+
+        # 合并缺失字段
+        merged = json.loads(json.dumps(DEFAULT_CONFIG))
+        for k, v in data.items() if isinstance(data, dict) else []:
+            if isinstance(v, dict) and isinstance(merged.get(k), dict):
+                merged[k].update(v)
+            else:
+                merged[k] = v
+        return merged
+
+    def _save_config(self):
+        CONFIG_PATH.write_text(json.dumps(self.config_data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def open_settings(self):
+        dlg = tk.Toplevel(self.root)
+        dlg.title("账号/API 配置")
+        dlg.geometry("560x340")
+        dlg.resizable(False, False)
+        dlg.transient(self.root)
+        dlg.grab_set()
+
+        frm = ttk.Frame(dlg, padding=14)
+        frm.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(frm, text="长风 API Key:").grid(row=0, column=0, sticky=tk.W, pady=6)
+        cf_key = ttk.Entry(frm, width=52)
+        cf_key.grid(row=0, column=1, sticky=tk.EW, pady=6)
+        cf_key.insert(0, self.config_data.get("changfeng", {}).get("api_key", ""))
+
+        ttk.Label(frm, text="云驿 API Key:").grid(row=1, column=0, sticky=tk.W, pady=6)
+        yy_key = ttk.Entry(frm, width=52)
+        yy_key.grid(row=1, column=1, sticky=tk.EW, pady=6)
+        yy_key.insert(0, self.config_data.get("yunyi", {}).get("api_key", ""))
+
+        ttk.Label(frm, text="Codex 邮箱:").grid(row=2, column=0, sticky=tk.W, pady=6)
+        cx_email = ttk.Entry(frm, width=52)
+        cx_email.grid(row=2, column=1, sticky=tk.EW, pady=6)
+        cx_email.insert(0, self.config_data.get("codex", {}).get("email", ""))
+
+        ttk.Label(frm, text="Codex 密码:").grid(row=3, column=0, sticky=tk.W, pady=6)
+        cx_pwd = ttk.Entry(frm, width=52, show="*")
+        cx_pwd.grid(row=3, column=1, sticky=tk.EW, pady=6)
+        cx_pwd.insert(0, self.config_data.get("codex", {}).get("password", ""))
+
+        auto_refresh_var = tk.BooleanVar(value=bool(self.config_data.get("auto_refresh_on_start", True)))
+        ttk.Checkbutton(frm, text="软件启动后自动刷新三平台", variable=auto_refresh_var).grid(
+            row=4, column=1, sticky=tk.W, pady=(10, 4)
         )
 
-    def _build_changfeng_tab(self):
-        tab = ttk.Frame(self.notebook, padding=15)
-        self.notebook.add(tab, text="长风 (Sub2API)")
+        note = "提示：配置会保存在软件目录下 config.json（明文）。"
+        ttk.Label(frm, text=note, foreground="#6b7280").grid(row=5, column=1, sticky=tk.W, pady=(4, 12))
 
-        ttk.Label(tab, text="长风 API 余额查询", style="Header.TLabel").pack(anchor=tk.W)
-        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=8)
-
-        frm = ttk.Frame(tab)
-        frm.pack(fill=tk.X)
-        ttk.Label(frm, text="API Key:").pack(side=tk.LEFT)
-        self.cf_key = ttk.Entry(frm, width=50, show="*")
-        self.cf_key.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        ttk.Button(frm, text="查询", command=self._query_changfeng).pack(side=tk.LEFT, padx=5)
-
-        self.cf_result = scrolledtext.ScrolledText(tab, height=18, state=tk.DISABLED, font=("Consolas", 10))
-        self.cf_result.pack(fill=tk.BOTH, expand=True, pady=10)
-
-    def _build_yunyi_tab(self):
-        tab = ttk.Frame(self.notebook, padding=15)
-        self.notebook.add(tab, text="云驿")
-
-        ttk.Label(tab, text="云驿 API 余额查询", style="Header.TLabel").pack(anchor=tk.W)
-        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=8)
-
-        frm = ttk.Frame(tab)
-        frm.pack(fill=tk.X)
-        ttk.Label(frm, text="API Key:").pack(side=tk.LEFT)
-        self.yy_key = ttk.Entry(frm, width=50, show="*")
-        self.yy_key.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
-        ttk.Button(frm, text="查询", command=self._query_yunyi).pack(side=tk.LEFT, padx=5)
-
-        self.yy_result = scrolledtext.ScrolledText(tab, height=18, state=tk.DISABLED, font=("Consolas", 10))
-        self.yy_result.pack(fill=tk.BOTH, expand=True, pady=10)
-
-    def _build_codex_tab(self):
-        tab = ttk.Frame(self.notebook, padding=15)
-        self.notebook.add(tab, text="Codex")
-
-        ttk.Label(tab, text="Codex (vpsairobot) 余额查询", style="Header.TLabel").pack(anchor=tk.W)
-        ttk.Separator(tab, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=8)
-
-        frm = ttk.Frame(tab)
-        frm.pack(fill=tk.X)
-        ttk.Label(frm, text="邮箱:").grid(row=0, column=0, sticky=tk.W, pady=2)
-        self.cx_email = ttk.Entry(frm, width=40)
-        self.cx_email.grid(row=0, column=1, padx=5, sticky=tk.EW, pady=2)
-
-        ttk.Label(frm, text="密码:").grid(row=1, column=0, sticky=tk.W, pady=2)
-        self.cx_pass = ttk.Entry(frm, width=40, show="*")
-        self.cx_pass.grid(row=1, column=1, padx=5, sticky=tk.EW, pady=2)
-
-        ttk.Button(frm, text="查询", command=self._query_codex).grid(row=0, column=2, rowspan=2, padx=5, sticky=tk.NS)
         frm.columnconfigure(1, weight=1)
 
-        self.cx_result = scrolledtext.ScrolledText(tab, height=16, state=tk.DISABLED, font=("Consolas", 10))
-        self.cx_result.pack(fill=tk.BOTH, expand=True, pady=10)
+        btns = ttk.Frame(frm)
+        btns.grid(row=6, column=1, sticky=tk.E)
 
-    def _set_result(self, widget, text):
-        widget.config(state=tk.NORMAL)
-        widget.delete("1.0", tk.END)
-        widget.insert(tk.END, text)
-        widget.config(state=tk.DISABLED)
+        def do_save():
+            self.config_data["changfeng"]["api_key"] = cf_key.get().strip()
+            self.config_data["yunyi"]["api_key"] = yy_key.get().strip()
+            self.config_data["codex"]["email"] = cx_email.get().strip()
+            self.config_data["codex"]["password"] = cx_pwd.get().strip()
+            self.config_data["auto_refresh_on_start"] = bool(auto_refresh_var.get())
+            self._save_config()
+            messagebox.showinfo("成功", "配置已保存")
+            dlg.destroy()
 
-    def _set_status(self, text):
-        self.status_var.set(text)
+        ttk.Button(btns, text="取消", command=dlg.destroy).pack(side=tk.LEFT, padx=6)
+        ttk.Button(btns, text="保存并立即刷新", command=lambda: [do_save(), self.refresh_all()]).pack(side=tk.LEFT)
 
-    def _query_changfeng(self):
-        key = self.cf_key.get().strip()
-        if not key:
-            messagebox.showwarning("提示", "请输入 API Key")
+    # ==================== Actions ====================
+
+    def refresh_all(self):
+        self._set_status("正在刷新三平台数据...")
+        self.last_update_var.set(f"上次刷新：{self._now_str()}")
+
+        threading.Thread(target=self._refresh_changfeng, daemon=True).start()
+        threading.Thread(target=self._refresh_yunyi, daemon=True).start()
+        threading.Thread(target=self._refresh_codex, daemon=True).start()
+
+    def _refresh_changfeng(self):
+        api_key = self.config_data.get("changfeng", {}).get("api_key", "").strip()
+        if not api_key:
+            self._update_card("changfeng", "未配置", {"剩余额度": "-", "今日用量": "-", "总请求": "-"}, "请在“账号/API 配置”中填写长风 API Key。")
             return
-        self._set_result(self.cf_result, "查询中...")
-        self._set_status("正在查询长风...")
-        threading.Thread(target=self._do_changfeng, args=(key,), daemon=True).start()
 
-    def _do_changfeng(self, key):
+        self._set_card_status("changfeng", "查询中", "#2563eb")
         try:
             resp = requests.get(
                 "https://cfjwlpro.com/api/v1/temp-api-keys/query",
-                params={"key": key, "page": 1, "page_size": 10},
-                timeout=15,
+                params={"key": api_key, "page": 1, "page_size": 10},
+                timeout=20,
             )
-            data = resp.json()
+            data = self._safe_json(resp)
             if data.get("code") != 0:
-                text = f"❌ 查询失败: {data.get('message', '未知错误')}"
+                raise RuntimeError(data.get("message") or "返回异常")
+
+            d = data.get("data")
+            if isinstance(d, list):
+                d = d[0] if d else {}
+            if not isinstance(d, dict):
+                d = {}
+
+            if d.get("key_type") == "quota_only":
+                remain = self._fmt_money(d.get("remaining_quota_usd"))
+                today = self._fmt_money(d.get("total_cost_usd"))
             else:
-                d = data["data"]
-                lines = [
-                    "═══════════════════════════════════",
-                    f"  名称: {d.get('name', '-')}",
-                    f"  分组: {d.get('group_name', '-')}",
-                    f"  状态: {self._cf_status(d)}",
-                    "───────────────────────────────────",
-                ]
-                if d.get("key_type") == "quota_only":
-                    lines += [
-                        f"  总额度: ${d.get('total_quota_usd', 0):.2f}",
-                        f"  已用:   ${d.get('total_cost_usd', 0):.4f}",
-                        f"  剩余:   ${d.get('remaining_quota_usd', 0):.4f}",
-                    ]
-                else:
-                    lines += [
-                        f"  有效天数: {d.get('valid_days', '-')}",
-                        f"  今日用量: {d.get('current_period_count', 0)} / {d.get('daily_limit', 0)}",
-                        f"  剩余次数: {d.get('remaining_requests', 0)}",
-                    ]
-                lines += [
-                    f"  总请求数: {d.get('total_requests', 0):,}",
-                    f"  激活时间: {self._fmt_time(d.get('activated_at'))}",
-                    f"  过期时间: {self._fmt_time(d.get('expires_at'))}",
-                    "═══════════════════════════════════",
-                ]
-                # 使用日志
-                logs = d.get("usage_logs", [])
-                if logs:
-                    lines.append(f"\n最近使用记录 ({len(logs)} 条):")
-                    lines.append(f"{'时间':<20} {'模型':<25} {'Tokens':>10} {'费用':>10}")
-                    lines.append("─" * 70)
-                    for log in logs:
-                        t = self._fmt_time_short(log.get("created_at"))
-                        model = log.get("model", "-")
-                        tokens = f"{log.get('total_tokens', 0):,}"
-                        cost = f"${log.get('actual_cost', 0):.4f}"
-                        lines.append(f"{t:<20} {model:<25} {tokens:>10} {cost:>10}")
-                text = "\n".join(lines)
-        except Exception as e:
-            text = f"❌ 请求失败: {e}"
-        self.root.after(0, self._set_result, self.cf_result, text)
-        self.root.after(0, self._set_status, "查询完成")
+                remain = str(d.get("remaining_requests", "-"))
+                today = f"{d.get('current_period_count', 0)} / {d.get('daily_limit', 0)}"
 
-    def _cf_status(self, d):
-        if d.get("status") == "disabled":
-            return "🔴 已禁用"
-        if d.get("status") == "exhausted" or d.get("is_exhausted"):
-            return "🔴 已耗尽"
-        if d.get("is_expired"):
-            return "🟡 已过期"
-        if d.get("is_activated"):
-            return "🟢 活跃"
-        return "🔵 待激活"
-
-    def _query_yunyi(self):
-        key = self.yy_key.get().strip()
-        if not key:
-            messagebox.showwarning("提示", "请输入 API Key")
-            return
-        self._set_result(self.yy_result, "查询中...")
-        self._set_status("正在查询云驿...")
-        threading.Thread(target=self._do_yunyi, args=(key,), daemon=True).start()
-
-    def _do_yunyi(self, key):
-        headers = {"Authorization": f"Bearer {key}"}
-        try:
-            # 查询用户信息
-            resp_me = requests.get(
-                "https://yunyi.cfd/user/api/v1/me", headers=headers, timeout=15
-            )
-            me_data = resp_me.json()
-
-            # 查询批量信息
-            resp_batch = requests.get(
-                "https://yunyi.cfd/user/api/v1/batch-info", headers=headers, timeout=15
-            )
-            batch_data = resp_batch.json()
-
-            if "error" in me_data:
-                text = f"❌ 查询失败: {me_data.get('message', me_data.get('error', '未知错误'))}"
-            else:
-                lines = [
-                    "═══════════════════════════════════",
-                    "  云驿 API 使用信息",
-                    "───────────────────────────────────",
-                ]
-                # me 接口数据
-                if isinstance(me_data, dict):
-                    for k, v in me_data.items():
-                        if k not in ("error", "message"):
-                            lines.append(f"  {k}: {v}")
-                lines.append("───────────────────────────────────")
-                # batch-info 数据
-                if isinstance(batch_data, dict) and "error" not in batch_data:
-                    lines.append("  批量信息:")
-                    for k, v in batch_data.items():
-                        if k not in ("error", "message"):
-                            lines.append(f"    {k}: {v}")
-                lines.append("═══════════════════════════════════")
-                text = "\n".join(lines)
-        except Exception as e:
-            text = f"❌ 请求失败: {e}"
-        self.root.after(0, self._set_result, self.yy_result, text)
-        self.root.after(0, self._set_status, "查询完成")
-
-    def _query_codex(self):
-        email = self.cx_email.get().strip()
-        pwd = self.cx_pass.get().strip()
-        if not email or not pwd:
-            messagebox.showwarning("提示", "请输入邮箱和密码")
-            return
-        self._set_result(self.cx_result, "登录中...")
-        self._set_status("正在登录 Codex...")
-        threading.Thread(target=self._do_codex, args=(email, pwd), daemon=True).start()
-
-    def _do_codex(self, email, pwd):
-        try:
-            # 登录
-            login_resp = requests.post(
-                "https://vpsairobot.com/api/v1/auth/login",
-                json={"email": email, "password": pwd},
-                timeout=15,
-            )
-            login_data = login_resp.json()
-            if login_data.get("code") and login_data["code"] != 0:
-                text = f"❌ 登录失败: {login_data.get('message', '未知错误')}"
-                self.root.after(0, self._set_result, self.cx_result, text)
-                self.root.after(0, self._set_status, "登录失败")
-                return
-
-            token = login_data.get("token") or login_data.get("data", {}).get("token", "")
-            if not token:
-                text = f"❌ 登录失败: 未获取到token\n响应: {json.dumps(login_data, indent=2, ensure_ascii=False)}"
-                self.root.after(0, self._set_result, self.cx_result, text)
-                self.root.after(0, self._set_status, "登录失败")
-                return
-
-            headers = {"Authorization": f"Bearer {token}"}
-
-            # 获取用户信息
-            me_resp = requests.get(
-                "https://vpsairobot.com/api/v1/auth/me", headers=headers, timeout=15
-            )
-            me_data = me_resp.json()
-
-            # 获取活跃订阅
-            sub_resp = requests.get(
-                "https://vpsairobot.com/api/v1/subscriptions/active", headers=headers, timeout=15
-            )
-            sub_data = sub_resp.json()
-
-            # 获取订阅摘要
-            summary_resp = requests.get(
-                "https://vpsairobot.com/api/v1/subscriptions/summary", headers=headers, timeout=15
-            )
-            summary_data = summary_resp.json()
+            summary = {
+                "剩余额度": remain,
+                "今日用量": today,
+                "总请求": self._fmt_int(d.get("total_requests")),
+            }
 
             lines = [
-                "═══════════════════════════════════",
-                "  Codex (vpsairobot) 账户信息",
-                "───────────────────────────────────",
+                "【长风查询结果】",
+                f"状态: {self._cf_status(d)}",
+                f"名称: {d.get('name', '-')}",
+                f"分组: {d.get('group_name', '-')}",
+                f"剩余额度/次数: {remain}",
+                f"今日用量: {today}",
+                f"总请求: {self._fmt_int(d.get('total_requests'))}",
+                f"激活时间: {self._fmt_time(d.get('activated_at'))}",
+                f"过期时间: {self._fmt_time(d.get('expires_at'))}",
+                "",
+                "原始响应:",
+                json.dumps(data, ensure_ascii=False, indent=2),
             ]
-
-            # 用户信息
-            if isinstance(me_data, dict):
-                user = me_data.get("data", me_data)
-                lines.append(f"  用户: {user.get('name', user.get('email', '-'))}")
-                if user.get("balance") is not None:
-                    lines.append(f"  余额: ${user['balance']:.4f}")
-
-            lines.append("───────────────────────────────────")
-
-            # 活跃订阅
-            if isinstance(sub_data, dict):
-                subs = sub_data.get("data", sub_data)
-                if isinstance(subs, list):
-                    lines.append(f"  活跃订阅 ({len(subs)} 个):")
-                    for s in subs:
-                        lines.append(f"    - {s.get('group_name', s.get('name', '-'))}")
-                        if s.get("daily_limit"):
-                            lines.append(f"      日限额: {s['daily_limit']}")
-                        if s.get("current_period_count") is not None:
-                            lines.append(f"      今日用量: {s['current_period_count']}")
-                        if s.get("expires_at"):
-                            lines.append(f"      过期: {self._fmt_time(s['expires_at'])}")
-                elif isinstance(subs, dict):
-                    for k, v in subs.items():
-                        lines.append(f"    {k}: {v}")
-
-            lines.append("───────────────────────────────────")
-
-            # 订阅摘要
-            if isinstance(summary_data, dict):
-                summary = summary_data.get("data", summary_data)
-                lines.append("  订阅摘要:")
-                if isinstance(summary, dict):
-                    for k, v in summary.items():
-                        lines.append(f"    {k}: {v}")
-                elif isinstance(summary, list):
-                    for item in summary:
-                        if isinstance(item, dict):
-                            lines.append(f"    - {json.dumps(item, ensure_ascii=False)}")
-
-            lines.append("═══════════════════════════════════")
-            text = "\n".join(lines)
+            self._update_card("changfeng", "成功", summary, "\n".join(lines), "#16a34a")
         except Exception as e:
-            text = f"❌ 请求失败: {e}"
-        self.root.after(0, self._set_result, self.cx_result, text)
-        self.root.after(0, self._set_status, "查询完成")
+            self._update_card("changfeng", "失败", {"剩余额度": "-", "今日用量": "-", "总请求": "-"}, f"❌ 长风查询失败: {e}", "#dc2626")
+
+    def _refresh_yunyi(self):
+        api_key = self.config_data.get("yunyi", {}).get("api_key", "").strip()
+        if not api_key:
+            self._update_card("yunyi", "未配置", {"余额": "-", "今日用量": "-", "总请求": "-"}, "请在“账号/API 配置”中填写云驿 API Key。")
+            return
+
+        self._set_card_status("yunyi", "查询中", "#2563eb")
+        try:
+            headers = {"Authorization": f"Bearer {api_key}"}
+            me_resp = requests.get("https://yunyi.cfd/user/api/v1/me", headers=headers, timeout=20)
+            batch_resp = requests.get("https://yunyi.cfd/user/api/v1/batch-info", headers=headers, timeout=20)
+
+            me = self._safe_json(me_resp)
+            batch = self._safe_json(batch_resp)
+
+            if self._has_error(me):
+                raise RuntimeError(me.get("message") or me.get("error") or "返回异常")
+
+            balance = self._pick_any([me, batch], [
+                "balance",
+                "remaining_balance",
+                "remaining_quota",
+                "quota",
+                "credit",
+                "available_balance",
+            ])
+            today_usage = self._pick_any([me, batch], [
+                "today_usage",
+                "current_period_count",
+                "daily_usage",
+                "used_today",
+                "today_tokens",
+            ])
+            total_req = self._pick_any([me, batch], [
+                "total_requests",
+                "request_count",
+                "total_count",
+                "total_usage",
+            ])
+
+            summary = {
+                "余额": self._fmt_maybe_money(balance),
+                "今日用量": self._fmt_maybe_int(today_usage),
+                "总请求": self._fmt_maybe_int(total_req),
+            }
+
+            lines = [
+                "【云驿查询结果】",
+                f"余额: {summary['余额']}",
+                f"今日用量: {summary['今日用量']}",
+                f"总请求: {summary['总请求']}",
+                "",
+                "[me]",
+                json.dumps(me, ensure_ascii=False, indent=2),
+                "",
+                "[batch-info]",
+                json.dumps(batch, ensure_ascii=False, indent=2),
+            ]
+            self._update_card("yunyi", "成功", summary, "\n".join(lines), "#16a34a")
+        except Exception as e:
+            self._update_card("yunyi", "失败", {"余额": "-", "今日用量": "-", "总请求": "-"}, f"❌ 云驿查询失败: {e}", "#dc2626")
+
+    def _refresh_codex(self):
+        email = self.config_data.get("codex", {}).get("email", "").strip()
+        password = self.config_data.get("codex", {}).get("password", "").strip()
+        if not email or not password:
+            self._update_card("codex", "未配置", {"账户": "-", "余额": "-", "活跃订阅": "-"}, "请在“账号/API 配置”中填写 Codex 邮箱和密码。")
+            return
+
+        self._set_card_status("codex", "查询中", "#2563eb")
+        try:
+            login_resp = requests.post(
+                "https://vpsairobot.com/api/v1/auth/login",
+                json={"email": email, "password": password},
+                timeout=20,
+            )
+            login = self._safe_json(login_resp)
+
+            token = (
+                login.get("token")
+                or (login.get("data") or {}).get("token")
+                or (login.get("data") or {}).get("access_token")
+            )
+            if not token:
+                raise RuntimeError(login.get("message") or "登录失败，未拿到 token")
+
+            headers = {"Authorization": f"Bearer {token}"}
+            me = self._safe_json(requests.get("https://vpsairobot.com/api/v1/auth/me", headers=headers, timeout=20))
+            active = self._safe_json(requests.get("https://vpsairobot.com/api/v1/subscriptions/active", headers=headers, timeout=20))
+            summary_raw = self._safe_json(requests.get("https://vpsairobot.com/api/v1/subscriptions/summary", headers=headers, timeout=20))
+
+            me_data = me.get("data") if isinstance(me, dict) and isinstance(me.get("data"), dict) else me
+            active_data = active.get("data") if isinstance(active, dict) and "data" in active else active
+            summary_data = summary_raw.get("data") if isinstance(summary_raw, dict) and "data" in summary_raw else summary_raw
+
+            account = "-"
+            if isinstance(me_data, dict):
+                account = me_data.get("name") or me_data.get("email") or "-"
+
+            balance = self._pick_any([me_data, summary_data], ["balance", "remaining_balance", "quota", "credit"])
+
+            active_count = 0
+            if isinstance(active_data, list):
+                active_count = len(active_data)
+            elif isinstance(active_data, dict):
+                active_count = int(active_data.get("count", 1))
+
+            summary = {
+                "账户": account,
+                "余额": self._fmt_maybe_money(balance),
+                "活跃订阅": str(active_count),
+            }
+
+            lines = [
+                "【Codex 查询结果】",
+                f"账户: {summary['账户']}",
+                f"余额: {summary['余额']}",
+                f"活跃订阅: {summary['活跃订阅']}",
+                "",
+                "[auth/me]",
+                json.dumps(me, ensure_ascii=False, indent=2),
+                "",
+                "[subscriptions/active]",
+                json.dumps(active, ensure_ascii=False, indent=2),
+                "",
+                "[subscriptions/summary]",
+                json.dumps(summary_raw, ensure_ascii=False, indent=2),
+            ]
+            self._update_card("codex", "成功", summary, "\n".join(lines), "#16a34a")
+        except Exception as e:
+            self._update_card("codex", "失败", {"账户": "-", "余额": "-", "活跃订阅": "-"}, f"❌ Codex 查询失败: {e}", "#dc2626")
+
+    # ==================== UI updates ====================
+
+    def _set_status(self, text: str):
+        self.root.after(0, lambda: self.status_var.set(text))
+
+    def _set_card_status(self, provider: str, text: str, color: str):
+        def _run():
+            card = self.cards[provider]
+            card["status_label"].config(text=text, fg=color)
+            card["update_var"].set(f"更新时间：{self._now_str()}")
+
+        self.root.after(0, _run)
+
+    def _set_detail(self, provider: str, text: str):
+        def _run():
+            box = self.detail_boxes[provider]
+            box.config(state=tk.NORMAL)
+            box.delete("1.0", tk.END)
+            box.insert("1.0", text)
+            box.config(state=tk.DISABLED)
+
+        self.root.after(0, _run)
+
+    def _update_card(self, provider: str, status: str, values: dict[str, str], detail: str, color: str = "#d97706"):
+        def _run():
+            card = self.cards[provider]
+            card["status_label"].config(text=status, fg=color)
+            for k, v in values.items():
+                if k in card["values"]:
+                    card["values"][k].set(str(v))
+            card["update_var"].set(f"更新时间：{self._now_str()}")
+
+        self.root.after(0, _run)
+        self._set_detail(provider, detail)
+        self._set_status("刷新完成")
+
+    # ==================== helpers ====================
 
     @staticmethod
-    def _fmt_time(ts):
+    def _safe_json(resp: requests.Response) -> dict[str, Any]:
+        try:
+            return resp.json()
+        except Exception:
+            raise RuntimeError(f"HTTP {resp.status_code} 非 JSON 响应: {resp.text[:200]}")
+
+    @staticmethod
+    def _has_error(data: Any) -> bool:
+        return isinstance(data, dict) and (
+            data.get("error") is not None
+            or (isinstance(data.get("code"), int) and data.get("code") not in (0, 200))
+        )
+
+    @staticmethod
+    def _pick_any(objs: list[Any], keys: list[str]) -> Any:
+        for obj in objs:
+            if isinstance(obj, dict):
+                for k in keys:
+                    if k in obj and obj[k] not in (None, ""):
+                        return obj[k]
+        return None
+
+    @staticmethod
+    def _fmt_int(v: Any) -> str:
+        try:
+            return f"{int(float(v)):,}"
+        except Exception:
+            return "-"
+
+    @staticmethod
+    def _fmt_money(v: Any) -> str:
+        try:
+            return f"${float(v):.4f}"
+        except Exception:
+            return "-"
+
+    def _fmt_maybe_money(self, v: Any) -> str:
+        if v is None:
+            return "-"
+        try:
+            return f"${float(v):.4f}"
+        except Exception:
+            return str(v)
+
+    def _fmt_maybe_int(self, v: Any) -> str:
+        if v is None:
+            return "-"
+        try:
+            return f"{int(float(v)):,}"
+        except Exception:
+            return str(v)
+
+    @staticmethod
+    def _cf_status(d: dict[str, Any]) -> str:
+        if d.get("status") == "disabled":
+            return "已禁用"
+        if d.get("status") == "exhausted" or d.get("is_exhausted"):
+            return "已耗尽"
+        if d.get("is_expired"):
+            return "已过期"
+        if d.get("is_activated"):
+            return "活跃"
+        return "待激活"
+
+    @staticmethod
+    def _fmt_time(ts: Any) -> str:
         if not ts:
             return "-"
         try:
@@ -342,27 +564,16 @@ class APIBalanceChecker:
                 dt = datetime.fromtimestamp(ts / 1000 if ts > 1e12 else ts)
             else:
                 return str(ts)
-            return dt.strftime("%Y-%m-%d %H:%M")
+            return dt.strftime("%Y-%m-%d %H:%M:%S")
         except Exception:
             return str(ts)
 
     @staticmethod
-    def _fmt_time_short(ts):
-        if not ts:
-            return "-"
-        try:
-            if isinstance(ts, str):
-                dt = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-            elif isinstance(ts, (int, float)):
-                dt = datetime.fromtimestamp(ts / 1000 if ts > 1e12 else ts)
-            else:
-                return str(ts)
-            return dt.strftime("%m-%d %H:%M:%S")
-        except Exception:
-            return str(ts)
+    def _now_str() -> str:
+        return datetime.now().strftime("%H:%M:%S")
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = APIBalanceChecker(root)
+    app = APIBalanceDashboard(root)
     root.mainloop()

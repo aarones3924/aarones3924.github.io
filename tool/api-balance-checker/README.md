@@ -1,6 +1,6 @@
-# API 余额查询工具
+# API 余额监控中心
 
-查询长风、云驿、Codex 三个 API 平台的 Token 用量和余额。
+查询长风、云驿、Codex 三个平台的数据，并在首页卡片里同时展示。支持启动自动刷新和账号/API 集成配置。
 
 ## 运行
 
@@ -10,6 +10,21 @@ python main.py
 ```
 
 Windows 也可以直接双击 `run_windows.bat` 启动（会自动检查 Python 和依赖）。
+
+## 账号/API 集成
+
+软件会在同目录自动生成 `config.json`，你只需填一次：
+
+```json
+{
+  "changfeng": {"api_key": "你的长风key"},
+  "yunyi": {"api_key": "你的云驿key"},
+  "codex": {"email": "你的邮箱", "password": "你的密码"},
+  "auto_refresh_on_start": true
+}
+```
+
+也可以在软件里点 **“账号/API 配置”** 直接填写并保存。
 
 ## 打包为 Windows exe
 
