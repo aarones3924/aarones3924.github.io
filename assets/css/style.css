@@ -221,7 +221,8 @@ a:hover {
   animation: slideDown 0.3s ease;
 }
 
-.search-input-wrapper {splay: flex;
+..search-input-wrapper {
+  display: flex;
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
@@ -256,11 +257,11 @@ a:hover {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background var(--trsition);
+  transition: background var(--transition);
 }
 
 .search-result-item:hover {
-  bnd: var(--bg-secondary);
+  background: var(--bg-secondary);
 }
 
 .search-result-item h4 {
@@ -315,10 +316,13 @@ a:hover {
   background: linear-gradient(135deg, var(--primary), var(--secondary), var(--primary));
   background-size: 200% 200%;
   -webkit-background-clip: text;
-  -webkit-text-fill-color: transparebackground-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   animation: gradientFlow 3s ease infinite;
   position: relative;
-}\yframes gradientFlow {
+}
+
+@keyframes gradientFlow {
   0%, 100% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
 }
@@ -352,7 +356,8 @@ a:hover {
 }
 
 @keyframes fadeIn {
-  from { opacityn  to { opacity: 1; }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideDown {
@@ -452,7 +457,7 @@ a:hover {
 
 .post-card {
   background: var(--bg);
-  border: 1px solid var(border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
   transition: all var(--transition);
@@ -479,7 +484,8 @@ a:hover {
   color: inherit;
 }
 
-.post-card .post-mdisplay: flex;
+.post-card .post-meta {
+  display: flex;
   gap: 12px;
   margin-bottom: 12px;
   font-size: 0.85rem;
@@ -647,7 +653,8 @@ a:hover {
 
 .toc a {
   color: var(--text);
-  font-size: 0.95rition: all var(--transition);
+  font-size: 0.95rem;
+  transition: all var(--transition);
   display: block;
   padding: 4px 0;
 }
@@ -687,7 +694,9 @@ a:hover {
 .post-content ul, .post-content ol {
   margin: 16px 0;
   padding-left: 24px;
-}n.post-content li {
+}
+
+.post-content li {
   margin-bottom: 8px;
 }
 
@@ -781,11 +790,33 @@ a:hover {
   border-top: 1px solid var(--border);
 }
 
+.related-posts {
+  margin: 28px 0;
+  padding: 16px 18px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.related-posts h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+
+.related-posts ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.related-posts li {
+  margin: 6px 0;
+}
+
 .post-tags {
-  dilay: flex;
+  display: flex;
   flex-wrap: wrap;
   gap: 8px;
- bottom: 24px;
+  margin-bottom: 24px;
 }
 
 .tag {
@@ -821,7 +852,9 @@ a:hover {
   color: var(--primary);
   background: var(--bg-tertiary);
   transform: translateX(4px);
-}\-nav a:first-child:hover {
+}
+
+.post-nav a:first-child:hover {
   transform: translateX(-4px);
 }
 
@@ -914,7 +947,7 @@ a:hover {
 
 /* Loading Skeleton */
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-tertiary) 5r(--bg-secondary) 75%);
+  background: linear-gradient(90deg, var(--bg-secondary) 25%, var(--bg-tertiary) 50%, var(--bg-secondary) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);

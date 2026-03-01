@@ -28,7 +28,23 @@ layout: default
       {% endfor %}
     </div>
     {% endif %}
-    
+
+    {% assign related_posts = site.posts | where_exp: 'post', 'post.url != page.url' %}
+    {% if page.categories.first %}
+      {% assign related_posts = related_posts | where_exp: 'post', 'post.categories contains page.categories.first' %}
+    {% endif %}
+    {% assign related_posts = related_posts | slice: 0, 3 %}
+    {% if related_posts.size > 0 %}
+    <section class="related-posts" aria-label="Related posts">
+      <h3>Related reading</h3>
+      <ul>
+        {% for post in related_posts %}
+        <li><a href="{{ post.url | relative_url }}">{{ post.title }}</a></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
     <div class="post-nav">
       {% if page.previous.url %}
       <a href="{{ page.previous.url | relative_url }}" class="prev">← {{ page.previous.title | truncate: 40 }}</a>

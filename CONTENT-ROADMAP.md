@@ -19,8 +19,8 @@ Build topical authority in "AI tools for business outcomes" with strong internal
 
 ## Next 10 Priority Posts
 
-1. ChatGPT vs Claude for Content Marketing Teams
-2. Best AI Tools for Ecommerce Store Owners
+1. ~~ChatGPT vs Claude for Content Marketing Teams~~ ✅
+2. ~~Best AI Tools for Ecommerce Store Owners~~ ✅
 3. Jasper vs Copy.ai vs ChatGPT for Ad Copy
 4. Best AI Tools for YouTube Script Writing
 5. Notion AI vs Coda AI vs ClickUp AI

@@ -95,7 +95,9 @@
       <p>© {{ 'now' | date: "%Y" }} AI Tools Hub. All rights reserved.</p>
       <p class="disclaimer">We may earn affiliate commissions from links on this site.</p>
     </div>
-  </foote- Back to Top Button -->
+  </footer>
+
+  <!-- Back to Top Button -->
   <button class="back-to-top" id="back-to-top" aria-label="Back to top">↑</button>
 
   <!-- Prism.js -->
@@ -122,24 +124,26 @@
 
     // Theme Toggle
     const themeToggle = document.getElementById('theme-toggle');
-    const themeIcon = themeToggle.querySelector('.theme-icon');
+    const themeIcon = themeToggle ? themeToggle.querySelector('.theme-icon') : null;
     const html = document.documentElement;
-    
+
     // Check saved theme or system preference
     const savedTheme = localStorage.getItem('theme');
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && systemDark)) {
       html.setAttribute('data-theme', 'dark');
-      themeIcon.textContent = '☀️';
+      if (themeIcon) themeIcon.textContent = '☀️';
     }
-    
-    themeToggle.addEventListener('click', () => {
-      const isDark = html.getAttribute('data-theme') === 'dark';
-      html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-      themeIcon.textContent = isDark ? '🌙' : '☀️';
-      localStorage.setItem, isDark ? 'light' : 'dark');
-    });
+
+    if (themeToggle && themeIcon) {
+      themeToggle.addEventListener('click', () => {
+        const isDark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        themeIcon.textContent = isDark ? '🌙' : '☀️';
+        localStorage.setItem('theme', isDark ? 'light' : 'dark');
+      });
+    }
 
     // Search Functionality
     const searchToggle = document.getElementById('search-toggle');
@@ -147,98 +151,100 @@
     const searchInput = document.getElementById('search-input');
     const searchResults = document.getElementById('search-results');
 
-    searchToggle.addEventListener('click', () => {
-      searchModal.classList.add('active');
-      searchInput.focus();
-    });
-
-    searchModal.addEventListener('click', (e) => {
-      if (e.target === searchModal) {
-     searchModal.classList.remove('active');
-        searchInput.value = '';
-        searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        searchModal.classList.remove('active');
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
+    if (searchToggle && searchModal && searchInput && searchResults) {
+      searchToggle.addEventListener('click', () => {
         searchModal.classList.add('active');
         searchInput.focus();
-      }
-    });
+      });
 
-    searchInput.addEventListener('input', (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      
-      if (!query) {
-        searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
-        return;
-      }
+      searchModal.addEventListener('click', (e) => {
+        if (e.target === searchModal) {
+          searchModal.classList.remove('active');
+          searchInput.value = '';
+          searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
+        }
+      });
 
-      const results = posts.filter(post => 
-        post.title.toLowerCase().includes(query) || 
-        post.excerpt.toLowerCase().includes(query)
-      );
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchModal.classList.remove('active');
+        }
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+          e.preventDefault();
+          searchModal.classList.add('active');
+          searchInput.focus();
+        }
+      });
 
-      if (results.length === 0) {
-        searchResults.innerHTML = '<div class="search-no-results">No results found</div>';
-        return;
-      }
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
 
-      searchResults.innerHTML = results.slice(0, 8).map(post => `
-        <a href="${post.url}" class="search-result-item">
-          <h4title}</h4>
-          <p>${post.excerpt}</p>
-        </a>
-      `).join('');
-    });
+        if (!query) {
+          searchResults.innerHTML = '<div class="search-no-results">Type to search...</div>';
+          return;
+        }
+
+        const results = posts.filter(post =>
+          (post.title || '').toLowerCase().includes(query) ||
+          (post.excerpt || '').toLowerCase().includes(query)
+        );
+
+        if (results.length === 0) {
+          searchResults.innerHTML = '<div class="search-no-results">No results found</div>';
+          return;
+        }
+
+        searchResults.innerHTML = results.slice(0, 8).map(post => `
+          <a href="${post.url}" class="search-result-item">
+            <h4>${post.title}</h4>
+            <p>${post.excerpt}</p>
+          </a>
+        `).join('');
+      });
+    }
 
     // Reading Progress Bar
     const progressBar = document.getElementById('reading-progress');
-    
-    window.addEventListener('scroll', () => {
-      const scrollTop = window.scrollY;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = (scrollTop / docHeight) * 100;
-      progressBar.style.width = progress + '%';
-    });
+    if (progressBar) {
+      window.addEventListener('scroll', () => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        progressBar.style.width = progress + '%';
+      });
+    }
 
     // Back to Top Button
     const backToTop = document.getElementById('back-to-top');
-    
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 5
-        backToTop.classList.add('visible');
-      } else {
-        backToTop.classList.remove('visible');
-      }
-    });
+    if (backToTop) {
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 500) {
+          backToTop.classList.add('visible');
+        } else {
+          backToTop.classList.remove('visible');
+        }
+      });
 
-    backToTop.addEventListener('click', () => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
+      backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
 
     // Lazy Load Images
     document.addEventListener('DOMContentLoaded', () => {
       const images = document.querySelectorAll('.post-content img');
-      
+      if (!('IntersectionObserver' in window) || images.length === 0) return;
+
       const imageObserver = new IntersectionObserver((entries, observer) => {
         entries.forEach(entry => {
           if (entry.isIntersecting) {
-            const img = entry.target;
-            img.classList.add('loaded');
-            observer.unobserve(img);
+            entry.target.classList.add('loaded');
+            observer.unobserve(entry.target);
           }
         });
       }, { rootMargin: '50px' });
 
-      images.forEach(img => {
-        imageObserver.observe(img);
-      });
+      images.forEach(img => imageObserver.observe(img));
     });
   </script>
 </body>
