@@ -30,6 +30,11 @@ Build topical authority in "AI tools for business outcomes" with strong internal
 9. Best AI Proposal Writing Tools for Agencies
 10. AI SEO Content Brief Template (Free)
 
+## Newly Published (2026-03-02)
+
+- ✅ Best AI Tools for Marketing Teams in 2026 (Tested Picks)
+- ✅ AI Content Marketing Guide (2026): Strategy, Workflow, and Prompts
+
 ## On-Page Standards (Every Post)
 
 - One clear primary keyword in title + first paragraph
