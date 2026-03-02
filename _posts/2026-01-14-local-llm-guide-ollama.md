@@ -1,11 +1,23 @@
 ---
 layout: post
-title: "Local LLMs Guide: Run AI Models on Your Own Computer (2026)"
-description: "How to run large language models locally. Ollama, LM Studio, and more. Privacy, cost savings, and offline AI. Complete setup guide for beginners."
+title: 'Local LLMs Guide: Run AI Models on Your Own Computer (2026)'
+description: How to run large language models locally. Ollama, LM Studio, and more.
+  Privacy, cost savings, and offline AI. Complete setup guide for beginners.
 date: 2026-01-14
-categories: [ai-tools, guides]
-tags: [local llm, ollama, llama, open source ai, privacy, self-hosted]
+categories:
+- ai-tools
+- guides
+tags:
+- local llm
+- ollama
+- llama
+- open source ai
+- privacy
+- self-hosted
 image: /assets/images/local-llm-guide.jpg
+permalink: /local-llm-guide-ollama/
+redirect_from:
+- /ai-tools/guides/2026/01/14/local-llm-guide-ollama.html
 ---
 
 # Local LLMs Guide: Run AI on Your Own Computer

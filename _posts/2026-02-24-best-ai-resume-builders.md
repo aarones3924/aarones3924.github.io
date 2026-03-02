@@ -1,9 +1,19 @@
 ---
-title: "Best AI Resume Builders in 2026: Land Your Dream Job"
-description: "Compare the best AI resume builders and CV tools. Create ATS-friendly resumes, optimize for keywords, and get more interviews with AI-powered tools."
+title: 'Best AI Resume Builders in 2026: Land Your Dream Job'
+description: Compare the best AI resume builders and CV tools. Create ATS-friendly
+  resumes, optimize for keywords, and get more interviews with AI-powered tools.
 date: 2026-02-24
-categories: [reviews]
-tags: [ai-tools, resume, career, job-search, productivity]
+categories:
+- reviews
+tags:
+- ai-tools
+- resume
+- career
+- job-search
+- productivity
+permalink: /best-ai-resume-builders/
+redirect_from:
+- /reviews/2026/02/24/best-ai-resume-builders.html
 ---
 
 Your resume gets about 7 seconds of attention from a recruiter — and that's if it passes the ATS (Applicant Tracking System) first. AI resume tools help you create optimized, professional resumes that get past the bots and impress the humans.

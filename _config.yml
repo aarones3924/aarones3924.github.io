@@ -3,6 +3,7 @@ description: Honest reviews, comparisons, and guides for AI tools. ChatGPT, Clau
 baseurl: ""
 url: "https://aarones3924.github.io"
 theme: null
+permalink: /:title/
 
 # SEO
 author:
@@ -12,6 +13,7 @@ plugins:
   - jekyll-feed
   - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-redirect-from
 
 # 文章设置
 defaults:

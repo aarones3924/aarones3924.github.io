@@ -1,9 +1,19 @@
 ---
-title: "Best AI Scheduling Assistants in 2026: Never Miss a Meeting Again"
-description: "Compare the best AI scheduling tools including Reclaim, Clockwise, and Motion. Automate your calendar, find meeting times, and protect focus time."
+title: 'Best AI Scheduling Assistants in 2026: Never Miss a Meeting Again'
+description: Compare the best AI scheduling tools including Reclaim, Clockwise, and
+  Motion. Automate your calendar, find meeting times, and protect focus time.
 date: 2026-02-24
-categories: [reviews]
-tags: [ai-tools, scheduling, calendar, productivity, business]
+categories:
+- reviews
+tags:
+- ai-tools
+- scheduling
+- calendar
+- productivity
+- business
+permalink: /best-ai-scheduling-assistants/
+redirect_from:
+- /reviews/2026/02/24/best-ai-scheduling-assistants.html
 ---
 
 Scheduling meetings is a productivity black hole. The back-and-forth emails, the timezone math, the double-bookings — AI scheduling tools eliminate all of it. Here are the best options in 2026.

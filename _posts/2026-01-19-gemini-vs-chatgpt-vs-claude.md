@@ -1,11 +1,22 @@
 ---
 layout: post
-title: "Google Gemini vs ChatGPT vs Claude: Complete Comparison (2026)"
-description: "Detailed comparison of the three major AI assistants. Features, pricing, strengths, and weaknesses. Find out which one is best for your needs."
+title: 'Google Gemini vs ChatGPT vs Claude: Complete Comparison (2026)'
+description: Detailed comparison of the three major AI assistants. Features, pricing,
+  strengths, and weaknesses. Find out which one is best for your needs.
 date: 2026-01-19
-categories: [ai-tools, comparisons]
-tags: [google gemini, chatgpt, claude, ai comparison, ai chatbot]
+categories:
+- ai-tools
+- comparisons
+tags:
+- google gemini
+- chatgpt
+- claude
+- ai comparison
+- ai chatbot
 image: /assets/images/gemini-chatgpt-claude.jpg
+permalink: /gemini-vs-chatgpt-vs-claude/
+redirect_from:
+- /ai-tools/comparisons/2026/01/19/gemini-vs-chatgpt-vs-claude.html
 ---
 
 # Google Gemini vs ChatGPT vs Claude: Which AI Should You Use?

@@ -1,11 +1,22 @@
 ---
 layout: post
-title: "Will AI Take Your Job? What the Data Actually Says (2026)"
-description: "Honest analysis of AI's impact on jobs. Which careers are at risk, which are safe, and how to future-proof your career. Based on research, not hype."
+title: Will AI Take Your Job? What the Data Actually Says (2026)
+description: Honest analysis of AI's impact on jobs. Which careers are at risk, which
+  are safe, and how to future-proof your career. Based on research, not hype.
 date: 2026-01-20
-categories: [ai-tools, career]
-tags: [ai jobs, future of work, career advice, ai impact, automation]
+categories:
+- ai-tools
+- career
+tags:
+- ai jobs
+- future of work
+- career advice
+- ai impact
+- automation
 image: /assets/images/ai-jobs-future.jpg
+permalink: /will-ai-take-your-job/
+redirect_from:
+- /ai-tools/career/2026/01/20/will-ai-take-your-job.html
 ---
 
 # Will AI Take Your Job? An Honest Analysis

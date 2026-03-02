@@ -1,11 +1,23 @@
 ---
 layout: post
-title: "How to Build a Passive Income Website with AI in 2026 (Step-by-Step)"
-description: "Learn how to create a profitable niche website using AI tools. From keyword research to content creation to monetization. Complete guide with real examples."
+title: How to Build a Passive Income Website with AI in 2026 (Step-by-Step)
+description: Learn how to create a profitable niche website using AI tools. From keyword
+  research to content creation to monetization. Complete guide with real examples.
 date: 2026-01-30
-categories: [make-money, guides]
-tags: [passive income, ai content, niche website, affiliate marketing, seo, make money online]
+categories:
+- make-money
+- guides
+tags:
+- passive income
+- ai content
+- niche website
+- affiliate marketing
+- seo
+- make money online
 image: /assets/images/passive-income-ai.jpg
+permalink: /passive-income-website-ai-guide/
+redirect_from:
+- /make-money/guides/2026/01/30/passive-income-website-ai-guide.html
 ---
 
 # How to Build a Passive Income Website with AI in 2026

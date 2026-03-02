@@ -1,11 +1,22 @@
 ---
 layout: post
-title: "Claude 3.5 Sonnet Review: Is It Better Than GPT-4?"
-description: "In-depth review of Anthropic's Claude 3.5 Sonnet. Compare features, pricing, and performance against GPT-4 and other AI models."
+title: 'Claude 3.5 Sonnet Review: Is It Better Than GPT-4?'
+description: In-depth review of Anthropic's Claude 3.5 Sonnet. Compare features, pricing,
+  and performance against GPT-4 and other AI models.
 date: 2026-02-03
-categories: [ai-tools, reviews]
-tags: [claude, anthropic, ai chatbot, gpt-4, ai review]
+categories:
+- ai-tools
+- reviews
+tags:
+- claude
+- anthropic
+- ai chatbot
+- gpt-4
+- ai review
 image: /assets/images/claude-review.jpg
+permalink: /claude-3-5-sonnet-review/
+redirect_from:
+- /ai-tools/reviews/2026/02/03/claude-3-5-sonnet-review.html
 ---
 
 # Claude 3.5 Sonnet Review: The GPT-4 Killer?

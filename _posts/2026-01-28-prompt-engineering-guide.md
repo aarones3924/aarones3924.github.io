@@ -1,11 +1,22 @@
 ---
 layout: post
-title: "Prompt Engineering Guide: How to Get Better Results from AI (2026)"
-description: "Master the art of prompt engineering. Learn techniques to get better, more accurate responses from ChatGPT, Claude, and other AI models. With examples."
+title: 'Prompt Engineering Guide: How to Get Better Results from AI (2026)'
+description: Master the art of prompt engineering. Learn techniques to get better,
+  more accurate responses from ChatGPT, Claude, and other AI models. With examples.
 date: 2026-01-28
-categories: [ai-tools, guides]
-tags: [prompt engineering, chatgpt prompts, claude prompts, ai tips, llm]
+categories:
+- ai-tools
+- guides
+tags:
+- prompt engineering
+- chatgpt prompts
+- claude prompts
+- ai tips
+- llm
 image: /assets/images/prompt-engineering.jpg
+permalink: /prompt-engineering-guide/
+redirect_from:
+- /ai-tools/guides/2026/01/28/prompt-engineering-guide.html
 ---
 
 # Prompt Engineering Guide: How to Get Better Results from AI

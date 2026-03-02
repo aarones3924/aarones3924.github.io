@@ -1,11 +1,23 @@
 ---
 layout: post
-title: "8 Best AI Video Generators in 2026 (Text to Video Tools)"
-description: "Create stunning videos from text with these AI video generators. Compare Runway, Pika, Sora, and more. Free and paid options included."
+title: 8 Best AI Video Generators in 2026 (Text to Video Tools)
+description: Create stunning videos from text with these AI video generators. Compare
+  Runway, Pika, Sora, and more. Free and paid options included.
 date: 2026-02-04
-categories: [ai-tools, video]
-tags: [ai video, text to video, video generator, runway, sora, pika]
+categories:
+- ai-tools
+- video
+tags:
+- ai video
+- text to video
+- video generator
+- runway
+- sora
+- pika
 image: /assets/images/ai-video-generators.jpg
+permalink: /best-ai-video-generators/
+redirect_from:
+- /ai-tools/video/2026/02/04/best-ai-video-generators.html
 ---
 
 # 8 Best AI Video Generators in 2026

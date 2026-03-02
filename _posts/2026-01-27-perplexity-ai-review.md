@@ -1,11 +1,22 @@
 ---
 layout: post
-title: "Perplexity AI Review: Is It Better Than Google Search?"
-description: "In-depth review of Perplexity AI as a search engine replacement. Features, accuracy, pricing compared to Google and ChatGPT. Real usage examples."
+title: 'Perplexity AI Review: Is It Better Than Google Search?'
+description: In-depth review of Perplexity AI as a search engine replacement. Features,
+  accuracy, pricing compared to Google and ChatGPT. Real usage examples.
 date: 2026-01-27
-categories: [ai-tools, reviews]
-tags: [perplexity ai, ai search, google alternative, research tools, ai review]
+categories:
+- ai-tools
+- reviews
+tags:
+- perplexity ai
+- ai search
+- google alternative
+- research tools
+- ai review
 image: /assets/images/perplexity-review.jpg
+permalink: /perplexity-ai-review/
+redirect_from:
+- /ai-tools/reviews/2026/01/27/perplexity-ai-review.html
 ---
 
 # Perplexity AI Review: The Future of Search?

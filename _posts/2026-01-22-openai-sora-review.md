@@ -1,11 +1,23 @@
 ---
 layout: post
-title: "OpenAI Sora Review: The Future of AI Video Generation"
-description: "Hands-on review of OpenAI's Sora video generator. Quality, pricing, limitations, and how it compares to Runway and Pika. Real examples included."
+title: 'OpenAI Sora Review: The Future of AI Video Generation'
+description: Hands-on review of OpenAI's Sora video generator. Quality, pricing, limitations,
+  and how it compares to Runway and Pika. Real examples included.
 date: 2026-01-22
-categories: [ai-tools, reviews]
-tags: [sora, openai, ai video, text to video, video generator, ai review]
+categories:
+- ai-tools
+- reviews
+tags:
+- sora
+- openai
+- ai video
+- text to video
+- video generator
+- ai review
 image: /assets/images/sora-review.jpg
+permalink: /openai-sora-review/
+redirect_from:
+- /ai-tools/reviews/2026/01/22/openai-sora-review.html
 ---
 
 # OpenAI Sora Review: Is It Worth the Hype?

@@ -1,11 +1,23 @@
 ---
 layout: post
-title: "AI for Beginners: Everything You Need to Know in 2026"
-description: "New to AI? This beginner's guide explains artificial intelligence in plain English. What it is, how to use it, best tools to start with, and common mistakes to avoid."
+title: 'AI for Beginners: Everything You Need to Know in 2026'
+description: New to AI? This beginner's guide explains artificial intelligence in
+  plain English. What it is, how to use it, best tools to start with, and common mistakes
+  to avoid.
 date: 2026-01-25
-categories: [ai-tools, guides]
-tags: [ai for beginners, artificial intelligence, chatgpt tutorial, ai guide, getting started]
+categories:
+- ai-tools
+- guides
+tags:
+- ai for beginners
+- artificial intelligence
+- chatgpt tutorial
+- ai guide
+- getting started
 image: /assets/images/ai-beginners-guide.jpg
+permalink: /ai-for-beginners-guide/
+redirect_from:
+- /ai-tools/guides/2026/01/25/ai-for-beginners-guide.html
 ---
 
 # AI for Beginners: Everything You Need to Know

@@ -1,10 +1,19 @@
 ---
 layout: post
-title: "Midjourney Prompts: 50+ Examples for Stunning AI Art"
+title: 'Midjourney Prompts: 50+ Examples for Stunning AI Art'
 date: 2026-02-09
-description: "Master Midjourney with these 50+ prompt examples. Learn prompt structure, styles, and techniques to create amazing AI-generated images."
-tags: ["Midjourney", "AI Art", "Prompts"]
-categories: ["AI Image Tools"]
+description: Master Midjourney with these 50+ prompt examples. Learn prompt structure,
+  styles, and techniques to create amazing AI-generated images.
+tags:
+- Midjourney
+- AI Art
+- Prompts
+categories:
+- AI Image Tools
+permalink: /midjourney-prompts-examples/
+redirect_from:
+- /ai image tools/2026/02/09/midjourney-prompts-examples.html
+- /ai%20image%20tools/2026/02/09/midjourney-prompts-examples.html
 ---
 
 Want to create stunning AI art with Midjourney? The secret is in the prompts.

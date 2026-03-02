@@ -1,10 +1,19 @@
 ---
 layout: post
-title: "Is ChatGPT Plus Worth It? Honest Review After 1 Year"
+title: Is ChatGPT Plus Worth It? Honest Review After 1 Year
 date: 2026-02-07
-description: "I've used ChatGPT Plus for a year. Here's my honest review of whether the $20/month subscription is worth it compared to the free version."
-tags: ["ChatGPT", "AI Review", "ChatGPT Plus"]
-categories: ["AI Reviews"]
+description: I've used ChatGPT Plus for a year. Here's my honest review of whether
+  the $20/month subscription is worth it compared to the free version.
+tags:
+- ChatGPT
+- AI Review
+- ChatGPT Plus
+categories:
+- AI Reviews
+permalink: /is-chatgpt-plus-worth-it/
+redirect_from:
+- /ai reviews/2026/02/07/is-chatgpt-plus-worth-it.html
+- /ai%20reviews/2026/02/07/is-chatgpt-plus-worth-it.html
 ---
 
 ChatGPT Plus costs $20/month. After using it for over a year, here's my honest take on whether it's worth the money.

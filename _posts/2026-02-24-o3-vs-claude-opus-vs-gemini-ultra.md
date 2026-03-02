@@ -1,9 +1,21 @@
 ---
-title: "OpenAI o3 vs Claude Opus vs Gemini Ultra: Best Reasoning AI in 2026"
-description: "Compare the most powerful AI reasoning models: OpenAI o3, Claude Opus, and Gemini Ultra. We test math, coding, logic, and analysis to find the smartest AI."
+title: 'OpenAI o3 vs Claude Opus vs Gemini Ultra: Best Reasoning AI in 2026'
+description: 'Compare the most powerful AI reasoning models: OpenAI o3, Claude Opus,
+  and Gemini Ultra. We test math, coding, logic, and analysis to find the smartest
+  AI.'
 date: 2026-02-24
-categories: [comparisons]
-tags: [openai, claude, gemini, ai-comparison, reasoning, llm]
+categories:
+- comparisons
+tags:
+- openai
+- claude
+- gemini
+- ai-comparison
+- reasoning
+- llm
+permalink: /o3-vs-claude-opus-vs-gemini-ultra/
+redirect_from:
+- /comparisons/2026/02/24/o3-vs-claude-opus-vs-gemini-ultra.html
 ---
 
 The race for the smartest AI is heating up. OpenAI's o3, Anthropic's Claude Opus, and Google's Gemini Ultra represent the cutting edge of AI reasoning. But which one actually thinks best? We tested all three on challenging tasks.

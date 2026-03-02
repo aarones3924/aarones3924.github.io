@@ -1,11 +1,24 @@
 ---
 layout: post
-title: "AI Agents Explained: The Complete Guide for 2026"
-description: "What are AI agents? How do they work? This comprehensive guide covers autonomous AI agents, multi-agent systems, and how to build your own. Real examples included."
+title: 'AI Agents Explained: The Complete Guide for 2026'
+description: What are AI agents? How do they work? This comprehensive guide covers
+  autonomous AI agents, multi-agent systems, and how to build your own. Real examples
+  included.
 date: 2026-02-01
-categories: [ai-tools, guides]
-tags: [ai agents, autonomous ai, langchain, autogpt, crew ai, ai automation]
+categories:
+- ai-tools
+- guides
+tags:
+- ai agents
+- autonomous ai
+- langchain
+- autogpt
+- crew ai
+- ai automation
 image: /assets/images/ai-agents-guide.jpg
+permalink: /ai-agents-guide-2026/
+redirect_from:
+- /ai-tools/guides/2026/02/01/ai-agents-guide-2026.html
 ---
 
 # AI Agents Explained: The Complete Guide for 2026
